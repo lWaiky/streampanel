@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Panel Stream</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0d0f14;
+    color: #f0f0f0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 1rem;
+    gap: 1rem;
+  }
+  header {
+    width: 100%; max-width: 420px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  h1 { font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.5); letter-spacing: 0.1em; text-transform: uppercase; }
+  .conn-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,0.35); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #444; flex-shrink: 0; }
+  .dot.on { background: #4adeaa; box-shadow: 0 0 6px #4adeaa; }
+  .dot.err { background: #ff5555; }
+
+  .setup {
+    width: 100%; max-width: 420px;
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 1rem;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .setup label { font-size: 11px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.08em; }
+  .setup input {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 8px 12px; color: #f0f0f0; font-size: 14px; outline: none; width: 100%;
+  }
+  .setup input:focus { border-color: rgba(74,222,170,0.4); }
+  .btn-connect {
+    padding: 9px; background: rgba(74,222,170,0.1); border: 1px solid rgba(74,222,170,0.3);
+    border-radius: 8px; color: #4adeaa; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .btn-connect:hover { background: rgba(74,222,170,0.2); }
+
+  .timer-display {
+    width: 100%; max-width: 420px;
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px; padding: 1.5rem 1rem; text-align: center;
+  }
+  .timer-label { font-size: 11px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .timer-value { font-size: 64px; font-weight: 700; letter-spacing: -3px; font-family: monospace; color: #fff; }
+  .timer-value.low { color: #ff5555; }
+
+  .playback {
+    width: 100%; max-width: 420px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .btn-play {
+    padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600;
+    cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn-play:active { transform: scale(0.97); }
+  .btn-pause { background: rgba(249,168,37,0.15); color: #f9a825; border: 1px solid rgba(249,168,37,0.3); }
+  .btn-reset { background: rgba(255,85,85,0.1); color: #ff5555; border: 1px solid rgba(255,85,85,0.25); }
+
+  .time-btns { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 8px; }
+  .time-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .btn-time {
+    padding: 16px 8px; border-radius: 12px; font-size: 16px; font-weight: 700;
+    cursor: pointer; border: none; transition: transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-time:active { transform: scale(0.95); }
+  .btn-add { background: rgba(74,222,170,0.12); color: #4adeaa; border: 1px solid rgba(74,222,170,0.25); }
+  .btn-add:hover { background: rgba(74,222,170,0.2); }
+  .btn-sub { background: rgba(255,85,85,0.1); color: #ff6b6b; border: 1px solid rgba(255,85,85,0.2); }
+  .btn-sub:hover { background: rgba(255,85,85,0.18); }
+
+  .custom-card {
+    width: 100%; max-width: 420px;
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 1rem;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .custom-card label { font-size: 11px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.08em; }
+  .custom-row { display: flex; gap: 8px; }
+  .custom-input {
+    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 10px 12px; color: #f0f0f0; font-size: 16px;
+    font-weight: 600; outline: none; text-align: center;
+  }
+  .custom-input:focus { border-color: rgba(74,222,170,0.4); }
+  .custom-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn-custom-add {
+    padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 700;
+    cursor: pointer; border: 1px solid rgba(74,222,170,0.25);
+    background: rgba(74,222,170,0.12); color: #4adeaa; transition: transform 0.1s;
+  }
+  .btn-custom-add:active { transform: scale(0.96); }
+  .btn-custom-sub {
+    padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 700;
+    cursor: pointer; border: 1px solid rgba(255,85,85,0.2);
+    background: rgba(255,85,85,0.1); color: #ff6b6b; transition: transform 0.1s;
+  }
+  .btn-custom-sub:active { transform: scale(0.96); }
+
+  .divider { width: 100%; max-width: 420px; height: 1px; background: rgba(255,255,255,0.06); }
+
+  .log-wrap {
+    width: 100%; max-width: 420px;
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 1rem;
+  }
+  .log-title { font-size: 11px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .log-list { max-height: 160px; overflow-y: auto; }
+  .log-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+  .log-item:last-child { border-bottom: none; }
+  .log-name { color: rgba(255,255,255,0.45); }
+  .log-added { font-weight: 600; }
+  .log-added.pos { color: #4adeaa; }
+  .log-added.neg { color: #ff6b6b; }
+  .log-time { color: rgba(255,255,255,0.2); font-size: 11px; }
+  .log-empty { font-size: 13px; color: rgba(255,255,255,0.2); text-align: center; padding: 1rem 0; }
+
+
+  .init-card {
+    width: 100%; max-width: 420px;
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 1rem;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .init-card label { font-size: 11px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.08em; }
+  .init-row { display: flex; gap: 8px; align-items: center; }
+  .init-input {
+    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 10px 12px; color: #f0f0f0; font-size: 20px;
+    font-weight: 700; outline: none; text-align: center; font-family: monospace;
+  }
+  .init-input:focus { border-color: rgba(74,222,170,0.4); }
+  .btn-init {
+    padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: 1px solid rgba(74,222,170,0.3);
+    background: rgba(74,222,170,0.12); color: #4adeaa; white-space: nowrap;
+    transition: transform 0.1s;
+  }
+  .btn-init:active { transform: scale(0.96); }
+  .btn-stream {
+    width: 100%; max-width: 420px;
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid rgba(74,222,170,0.4);
+    background: rgba(74,222,170,0.15);
+    color: #4adeaa;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: transform 0.1s, background 0.2s;
+  }
+  .btn-stream:active { transform: scale(0.97); }
+  .btn-stream.live { background: rgba(255,85,85,0.15); border-color: rgba(255,85,85,0.4); color: #ff6b6b; }
+  .toast {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #1e2030; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px; padding: 8px 20px; font-size: 13px; color: #f0f0f0;
+    transition: transform 0.3s ease; pointer-events: none; white-space: nowrap; z-index: 999;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Panel Stream</h1>
+  <div class="conn-badge">
+    <div class="dot" id="dot"></div>
+    <span id="conn-label">sin conectar</span>
+  </div>
+</header>
+
+<div class="setup">
+  <label>Servidor WebSocket</label>
+  <input type="text" id="ws-url" placeholder="wss://tu-servidor.railway.app" />
+  <label>Clave secreta</label>
+  <input type="password" id="ws-secret" placeholder="tu clave secreta" />
+  <button class="btn-connect" onclick="connectWS()">Conectar</button>
+</div>
+
+<div class="timer-display">
+  <div class="timer-label">tiempo en stream</div>
+  <div class="timer-value" id="timer-val">--:--:--</div>
+</div>
+
+<div class="playback">
+  <button class="btn-play btn-pause" id="btn-pause" onclick="sendPlayback('toggle')">⏸ Pausar</button>
+  <button class="btn-play btn-reset" onclick="sendPlayback('reset')">↺ Reiniciar</button>
+</div>
+
+
+<div class="init-card">
+  <label>horas iniciales del contador</label>
+  <div class="init-row">
+    <input class="init-input" type="number" id="init-hours" value="4" min="0" max="24" step="0.5" />
+    <button class="btn-init" onclick="sendInitHours()">Aplicar</button>
+  </div>
+</div>
+
+<button class="btn-stream" id="btn-stream" onclick="toggleStream()">▶ Iniciar Stream</button>
+
+<div class="time-btns">
+  <div class="time-row">
+    <button class="btn-time btn-add" onclick="sendTime(60)">+60 min</button>
+    <button class="btn-time btn-add" onclick="sendTime(30)">+30 min</button>
+    <button class="btn-time btn-add" onclick="sendTime(15)">+15 min</button>
+  </div>
+  <div class="time-row">
+    <button class="btn-time btn-sub" onclick="sendTime(-60)">−60 min</button>
+    <button class="btn-time btn-sub" onclick="sendTime(-30)">−30 min</button>
+    <button class="btn-time btn-sub" onclick="sendTime(-15)">−15 min</button>
+  </div>
+</div>
+
+<div class="custom-card">
+  <label>tiempo personalizado (minutos)</label>
+  <div class="custom-row">
+    <input class="custom-input" type="number" id="custom-mins" placeholder="0" min="0" step="1" />
+  </div>
+  <div class="custom-btns">
+    <button class="btn-custom-add" onclick="sendCustom(1)">+ Añadir</button>
+    <button class="btn-custom-sub" onclick="sendCustom(-1)">− Quitar</button>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="log-wrap">
+  <div class="log-title">historial de sesión</div>
+  <div class="log-list" id="log-list">
+    <div class="log-empty">Sin eventos todavía</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let ws = null, secret = '', logs = [], paused = false;
+
+let streamLive = false;
+
+function toggleStream() {
+  if (!streamLive) {
+    if (!send({ type: 'start_stream' })) return;
+    streamLive = true;
+    const btn = document.getElementById('btn-stream');
+    btn.textContent = '⏹ Terminar Stream';
+    btn.classList.add('live');
+    addLog('Stream iniciado', 0, '▶ live');
+    showToast('▶ Stream iniciado');
+  } else {
+    streamLive = false;
+    const btn = document.getElementById('btn-stream');
+    btn.textContent = '▶ Iniciar Stream';
+    btn.classList.remove('live');
+    addLog('Stream terminado', 0, '⏹ off');
+    showToast('⏹ Stream terminado');
+  }
+}
+
+
+function connectWS() {
+  const url = document.getElementById('ws-url').value.trim();
+  secret = document.getElementById('ws-secret').value.trim();
+  if (!url) return showToast('Introduce la URL del servidor');
+  localStorage.setItem('ws_url', url);
+  localStorage.setItem('ws_secret', secret);
+  if (ws) ws.close();
+  setStatus('connecting');
+  ws = new WebSocket(url);
+  ws.addEventListener('open', () => { setStatus('on'); showToast('Conectado ✓'); });
+  ws.addEventListener('message', (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.remaining !== undefined) syncTimer(msg.remaining);
+      if (msg.paused !== undefined) updatePauseBtn(msg.paused);
+    } catch {}
+  });
+  ws.addEventListener('close', () => { setStatus('off'); showToast('Desconectado'); });
+  ws.addEventListener('error', () => setStatus('err'));
+}
+
+function send(payload) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('No conectado'); return false; }
+  ws.send(JSON.stringify({ secret, ...payload }));
+  return true;
+}
+
+function sendTime(mins) {
+  if (!send({ type: 'custom', amount: mins })) return;
+  addLog('Tiempo manual', mins, (mins > 0 ? '+' : '') + mins + ' min');
+  showToast(mins > 0 ? '✓ +' + mins + ' min' : '✓ ' + mins + ' min');
+}
+
+function sendCustom(sign) {
+  const val = parseFloat(document.getElementById('custom-mins').value) || 0;
+  if (val <= 0) { showToast('Introduce los minutos'); return; }
+  const mins = sign * val;
+  if (!send({ type: 'custom', amount: mins })) return;
+  addLog('Tiempo personalizado', mins, (mins > 0 ? '+' : '') + mins + ' min');
+  showToast(mins > 0 ? '✓ +' + mins + ' min' : '✓ ' + mins + ' min');
+  document.getElementById('custom-mins').value = '';
+}
+
+function sendPlayback(action) {
+  if (!send({ type: action })) return;
+  if (action === 'toggle') {
+    paused = !paused;
+    updatePauseBtn(paused);
+    showToast(paused ? '⏸ Pausado' : '▶ Reanudado');
+  } else if (action === 'reset') {
+    showToast('↺ Reiniciado');
+    paused = false;
+    updatePauseBtn(false);
+  }
+}
+
+function updatePauseBtn(isPaused) {
+  paused = isPaused;
+  document.getElementById('btn-pause').textContent = isPaused ? '▶ Reanudar' : '⏸ Pausar';
+}
+
+function syncTimer(secs) {
+  const el = document.getElementById('timer-val');
+  const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
+  el.textContent = [h,m,s].map(n=>String(Math.floor(n)).padStart(2,'0')).join(':');
+  el.className = 'timer-value' + (secs <= 60 && secs > 0 ? ' low' : '');
+}
+
+function addLog(name, mins, label) {
+  const now = new Date();
+  const t = [now.getHours(), now.getMinutes(), now.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+  logs.unshift({ name, mins, label, t });
+  if (logs.length > 50) logs.pop();
+  document.getElementById('log-list').innerHTML = logs.map(l =>
+    `<div class="log-item">
+      <span class="log-name">${l.name}</span>
+      <span class="log-added ${l.mins >= 0 ? 'pos' : 'neg'}">${l.label}</span>
+      <span class="log-time">${l.t}</span>
+    </div>`
+  ).join('');
+}
+
+function setStatus(state) {
+  document.getElementById('dot').className = 'dot ' + (state === 'on' ? 'on' : state === 'err' ? 'err' : '');
+  document.getElementById('conn-label').textContent = state === 'on' ? 'conectado' : state === 'connecting' ? 'conectando…' : state === 'err' ? 'error' : 'sin conectar';
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+
+function sendInitHours() {
+  const hours = parseFloat(document.getElementById('init-hours').value) || 4;
+  if (hours < 0) return showToast('Introduce un valor válido');
+  const mins = hours * 60;
+  if (!send({ type: 'set_time', amount: mins })) return;
+  addLog('Tiempo inicial', mins, hours + 'h');
+  showToast('✓ Contador ajustado a ' + hours + 'h');
+}
+window.addEventListener('DOMContentLoaded', () => {
+  const savedUrl = localStorage.getItem('ws_url');
+  const savedSecret = localStorage.getItem('ws_secret');
+  if (savedUrl) document.getElementById('ws-url').value = savedUrl;
+  if (savedSecret) document.getElementById('ws-secret').value = savedSecret;
+
+  document.getElementById('custom-mins').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendCustom(1);
+  });
+});
+</script>
+</body>
+</html>
