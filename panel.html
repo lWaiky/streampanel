@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Panel Stream</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161820;
+    --border: rgba(255,255,255,0.08);
+    --text: #f0f0f0;
+    --muted: rgba(255,255,255,0.35);
+    --green: #4adeaa;
+    --green-dim: rgba(74,222,170,0.12);
+    --red: #ff5555;
+    --amber: #f9a825;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 1.25rem;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+  .conn-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--muted);
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #555; transition: background 0.3s;
+    flex-shrink: 0;
+  }
+  .dot.on { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot.err { background: var(--red); }
+
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .setup-card label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+  .row { display: flex; gap: 8px; }
+  input[type=text], input[type=password], input[type=number] {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus { border-color: rgba(74,222,170,0.4); }
+  .btn-connect {
+    padding: 9px 16px;
+    background: var(--green-dim);
+    border: 1px solid rgba(74,222,170,0.3);
+    border-radius: 8px;
+    color: var(--green);
+    font-size: 14px; font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .btn-connect:hover { background: rgba(74,222,170,0.2); }
+
+  .timer-display {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1rem;
+    text-align: center;
+    margin-bottom: 1.25rem;
+  }
+  .timer-label { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .timer-value { font-size: 48px; font-weight: 700; letter-spacing: -2px; color: var(--text); font-family: monospace; }
+  .timer-value.low { color: var(--red); }
+
+  .section-label {
+    font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+
+  .events-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+  .btn-event {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 10px;
+    color: var(--text);
+    cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    transition: background 0.15s, transform 0.1s, border-color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-event:active { transform: scale(0.96); background: rgba(255,255,255,0.06); }
+  .btn-event.flash { border-color: var(--green); background: var(--green-dim); }
+  .ev-icon { font-size: 24px; }
+  .ev-name { font-size: 13px; font-weight: 500; }
+  .ev-mins { font-size: 11px; color: var(--muted); }
+
+  .bits-card {
+    background: var(--surface);
+    border: 1px solid rgba(74,222,170,0.2);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .bits-card .section-label { color: var(--green); opacity: 0.7; }
+  .bits-row { display: flex; gap: 8px; align-items: center; }
+  .bits-row input { max-width: 120px; }
+  .btn-bits {
+    padding: 9px 16px;
+    background: var(--green-dim);
+    border: 1px solid rgba(74,222,170,0.3);
+    border-radius: 8px;
+    color: var(--green);
+    font-size: 14px; font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .btn-bits:hover { background: rgba(74,222,170,0.2); }
+  .bits-preview { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  .custom-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .custom-row { display: flex; gap: 8px; align-items: center; }
+  .btn-custom {
+    padding: 9px 16px;
+    background: rgba(249,168,37,0.1);
+    border: 1px solid rgba(249,168,37,0.3);
+    border-radius: 8px;
+    color: var(--amber);
+    font-size: 14px; font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .log-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+  }
+  .log-list { max-height: 180px; overflow-y: auto; }
+  .log-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .log-item:last-child { border-bottom: none; }
+  .log-name { color: var(--muted); }
+  .log-added { color: var(--green); font-weight: 500; }
+  .log-time { font-size: 11px; color: rgba(255,255,255,0.2); }
+  .log-empty { font-size: 13px; color: rgba(255,255,255,0.2); text-align: center; padding: 1rem 0; }
+
+  .toast {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #1e2030; border: 1px solid var(--border);
+    border-radius: 20px; padding: 8px 18px;
+    font-size: 13px; color: var(--text);
+    transition: transform 0.3s ease;
+    pointer-events: none; white-space: nowrap;
+    z-index: 999;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Panel Stream</h1>
+  <div class="conn-badge">
+    <div class="dot" id="dot"></div>
+    <span id="conn-label">sin conectar</span>
+  </div>
+</header>
+
+<div class="setup-card">
+  <label>Servidor WebSocket</label>
+  <div class="row" style="margin-bottom:8px;">
+    <input type="text" id="ws-url" placeholder="ws://tu-ip:8765" />
+  </div>
+  <label>Clave secreta</label>
+  <div class="row">
+    <input type="password" id="ws-secret" placeholder="tu clave secreta" />
+    <button class="btn-connect" onclick="connectWS()">Conectar</button>
+  </div>
+</div>
+
+<div class="timer-display">
+  <div class="timer-label">tiempo en stream</div>
+  <div class="timer-value" id="timer-val">--:--:--</div>
+</div>
+
+<p class="section-label">eventos</p>
+<div class="events-grid" id="events-grid"></div>
+
+<div class="bits-card">
+  <p class="section-label">💎 bits</p>
+  <div class="bits-row">
+    <input type="number" id="bits-input" placeholder="ej: 500" min="1" step="1" />
+    <button class="btn-bits" onclick="sendBits()">Añadir</button>
+  </div>
+  <div class="bits-preview" id="bits-preview"></div>
+</div>
+
+<div class="custom-card">
+  <p class="section-label" style="color:var(--amber);opacity:0.7;">⏱️ añadir minutos</p>
+  <div class="custom-row">
+    <input type="number" id="custom-mins" placeholder="minutos (ej: 5)" min="0.5" step="0.5" />
+    <button class="btn-custom" onclick="sendCustom()">Añadir</button>
+  </div>
+</div>
+
+<div class="log-card">
+  <p class="section-label" style="margin-bottom:10px;">registro</p>
+  <div class="log-list" id="log-list">
+    <div class="log-empty">Sin eventos todavía</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const EVENTS = [
+  { key: 'follower', name: 'Seguidor', icon: '👤' },
+  { key: 'sub',      name: 'Sub',      icon: '⭐' },
+  { key: 'resub',    name: 'Resub',    icon: '🔄' },
+  { key: 'raid',     name: 'Raid',     icon: '⚔️' },
+  { key: 'donation', name: 'Donación', icon: '💜' },
+];
+
+// Tiempos por defecto (se sincronizan con lo que manda el servidor)
+const MINS = { follower:1, sub:5, resub:3, raid:10, donation:3, bitsPerUnit:100, bitsMinutes:1 };
+
+let ws = null;
+let secret = '';
+let logs = [];
+
+// ── WebSocket ─────────────────────────────────────────────────
+function connectWS() {
+  const url = document.getElementById('ws-url').value.trim();
+  secret     = document.getElementById('ws-secret').value.trim();
+  if (!url) return showToast('Introduce la URL del servidor');
+
+  // Guardar en localStorage para no tener que reescribir
+  localStorage.setItem('ws_url', url);
+  localStorage.setItem('ws_secret', secret);
+
+  if (ws) ws.close();
+  setStatus('connecting');
+
+  ws = new WebSocket(url);
+
+  ws.addEventListener('open', () => {
+    setStatus('on');
+    showToast('Conectado ✓');
+  });
+
+  ws.addEventListener('message', (e) => {
+    // El servidor puede mandar de vuelta el tiempo actual si quieres
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.remaining !== undefined) syncTimer(msg.remaining);
+    } catch {}
+  });
+
+  ws.addEventListener('close', () => {
+    setStatus('off');
+    showToast('Desconectado');
+  });
+
+  ws.addEventListener('error', () => setStatus('err'));
+}
+
+function send(type, amount) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    showToast('No conectado al servidor');
+    return false;
+  }
+  ws.send(JSON.stringify({ secret, type, amount: amount || 0 }));
+  return true;
+}
+
+// ── Botones eventos ───────────────────────────────────────────
+function buildEvents() {
+  const grid = document.getElementById('events-grid');
+  grid.innerHTML = EVENTS.map(e => `
+    <button class="btn-event" id="btn-${e.key}" onclick="fireEvent('${e.key}')">
+      <span class="ev-icon">${e.icon}</span>
+      <span class="ev-name">${e.name}</span>
+      <span class="ev-mins" id="mins-${e.key}">${MINS[e.key]} min</span>
+    </button>
+  `).join('');
+}
+
+function fireEvent(key) {
+  const ev = EVENTS.find(e => e.key === key);
+  if (!send(key)) return;
+  addLog(ev.icon + ' ' + ev.name, MINS[key] + ' min');
+  flashBtn(key);
+  showToast(ev.icon + ' ' + ev.name + ' enviado');
+}
+
+function sendBits() {
+  const amount = parseInt(document.getElementById('bits-input').value) || 0;
+  if (amount <= 0) { showToast('Introduce una cantidad de bits'); return; }
+  if (!send('bits', amount)) return;
+  const mins = ((amount / MINS.bitsPerUnit) * MINS.bitsMinutes).toFixed(1).replace('.0','');
+  addLog('💎 Bits (' + amount + ')', mins + ' min');
+  flashBtn('bits');
+  showToast('💎 ' + amount + ' bits enviados');
+  document.getElementById('bits-input').value = '';
+}
+
+function sendCustom() {
+  const mins = parseFloat(document.getElementById('custom-mins').value) || 0;
+  if (mins <= 0) { showToast('Introduce los minutos a añadir'); return; }
+  if (!send('custom', mins)) return;
+  addLog('⏱️ Manual', mins + ' min');
+  showToast('⏱️ +' + mins + ' min enviados');
+  document.getElementById('custom-mins').value = '';
+}
+
+// ── UI helpers ────────────────────────────────────────────────
+function flashBtn(key) {
+  const btn = document.getElementById('btn-' + key);
+  if (!btn) return;
+  btn.classList.add('flash');
+  setTimeout(() => btn.classList.remove('flash'), 600);
+}
+
+function setStatus(state) {
+  const dot = document.getElementById('dot');
+  const lbl = document.getElementById('conn-label');
+  dot.className = 'dot ' + (state === 'on' ? 'on' : state === 'err' ? 'err' : '');
+  lbl.textContent = state === 'on' ? 'conectado' : state === 'connecting' ? 'conectando…' : state === 'err' ? 'error' : 'sin conectar';
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function addLog(name, added) {
+  const now = new Date();
+  const t = [now.getHours(), now.getMinutes(), now.getSeconds()].map(n => String(n).padStart(2,'0')).join(':');
+  logs.unshift({ name, added, t });
+  if (logs.length > 30) logs.pop();
+  document.getElementById('log-list').innerHTML = logs.map(l =>
+    `<div class="log-item"><span class="log-name">${l.name}</span><span class="log-added">+${l.added}</span><span class="log-time">${l.t}</span></div>`
+  ).join('');
+}
+
+function syncTimer(secs) {
+  const el = document.getElementById('timer-val');
+  const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
+  el.textContent = [h,m,s].map(n=>String(Math.floor(n)).padStart(2,'0')).join(':');
+  el.className = 'timer-value' + (secs <= 60 && secs > 0 ? ' low' : '');
+}
+
+function updateBitsPreview() {
+  const pu = MINS.bitsPerUnit, mu = MINS.bitsMinutes;
+  document.getElementById('bits-preview').textContent =
+    `${pu} bits = ${mu} min · ${pu*5} bits = ${mu*5} min · ${pu*10} bits = ${mu*10} min`;
+}
+
+// Restaurar URL y secret guardados
+window.addEventListener('DOMContentLoaded', () => {
+  const savedUrl = localStorage.getItem('ws_url');
+  const savedSecret = localStorage.getItem('ws_secret');
+  if (savedUrl) document.getElementById('ws-url').value = savedUrl;
+  if (savedSecret) document.getElementById('ws-secret').value = savedSecret;
+  buildEvents();
+  updateBitsPreview();
+
+  document.getElementById('bits-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendBits();
+  });
+  document.getElementById('custom-mins').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendCustom();
+  });
+});
+</script>
+</body>
+</html>
