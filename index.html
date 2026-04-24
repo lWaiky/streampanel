@@ -280,7 +280,7 @@ function connectWS() {
   if (ws) ws.close();
   setStatus('connecting');
   ws = new WebSocket(url);
-  ws.addEventListener('open', () => { setStatus('on'); showToast('Conectado ✓'); });
+  ws.addEventListener('open', () => { setStatus('on'); showToast('Conectado ✓'); ws.send(JSON.stringify({ role: 'panel' })); });
   ws.addEventListener('message', (e) => {
     try {
       const msg = JSON.parse(e.data);
