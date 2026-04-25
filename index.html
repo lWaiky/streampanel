@@ -1,390 +1,373 @@
-const http = require('http');
-const { WebSocketServer } = require('ws');
-const { Client, GatewayIntentBits } = require('discord.js');
-const tmi  = require('tmi.js');
-
-// ─── CONFIGURACIÓN DE TIEMPOS (fuente de verdad) ─────────────
-const CONFIG = {
-  follower:    10 * 60,   // segundos
-  sub:         60 * 60,
-  resub:       60 * 60,
-  donation:    30 * 60,   // por euro
-  bitsPerUnit: 100,
-  bitsSeconds: 30 * 60,   // por cada 100 bits
-  raidPerViewer: 3 * 60,  // por viewer, mínimo 3 viewers
-};
-
-// ─── VARIABLES DE ENTORNO ─────────────────────────────────────
-const DISCORD_TOKEN   = process.env.DISCORD_TOKEN;
-const SECRET          = process.env.SECRET || 'CAMBIA_ESTO_POR_UNA_CLAVE_SECRETA';
-const PORT            = process.env.PORT || 8080;
-const ALLOWED_CHANNEL = '';
-const TWITCH_TOKEN    = process.env.TWITCH_TOKEN;
-const TWITCH_USER     = 'onlyflan_es';
-const REDIS_URL       = process.env.UPSTASH_REDIS_REST_URL;
-const REDIS_TOKEN     = process.env.UPSTASH_REDIS_REST_TOKEN;
-// ─────────────────────────────────────────────────────────────
-
-// ── Redis ─────────────────────────────────────────────────────
-async function redisGet(key) {
-  try {
-    const res = await fetch(`${REDIS_URL}/get/${key}`, {
-      headers: { Authorization: `Bearer ${REDIS_TOKEN}` }
-    });
-    const data = await res.json();
-    return data.result;
-  } catch(e) { console.error('[Redis] GET error:', e.message); return null; }
-}
-
-async function redisSet(key, value) {
-  try {
-    await fetch(`${REDIS_URL}/set/${key}/${encodeURIComponent(String(value))}`, {
-      headers: { Authorization: `Bearer ${REDIS_TOKEN}` }
-    });
-  } catch(e) { console.error('[Redis] SET error:', e.message); }
-}
-
-// ── Estado ────────────────────────────────────────────────────
-let currentRemaining = 4 * 3600;
-let streamStartTime  = null;
-let serverPaused     = false;
-const contributors   = {};
-const recentEvents   = new Map(); // anti-duplicados
-
-async function loadState() {
-  try {
-    const r = await redisGet('remaining');
-    const s = await redisGet('streamStartTime');
-    const p = await redisGet('paused');
-    if (r !== null) currentRemaining = parseInt(r);
-    if (s !== null && s !== 'null') streamStartTime = parseInt(s);
-    if (p !== null) serverPaused = p === 'true';
-    console.log('[Redis] Estado cargado:', { currentRemaining, serverPaused });
-  } catch(e) { console.warn('[State] Error:', e.message); }
-}
-
-async function saveState() {
-  await redisSet('remaining', currentRemaining);
-  await redisSet('streamStartTime', streamStartTime || 'null');
-  await redisSet('paused', serverPaused);
-}
-
-// ── Sumar tiempo en el servidor ───────────────────────────────
-function addTime(secs) {
-  currentRemaining = Math.max(0, currentRemaining + secs);
-  broadcastAll({ type: 'sync_time', remaining: currentRemaining });
-  saveState();
-}
-
-function processEvent(type, amount, username) {
-  let secs = 0;
-  let label = '';
-
-  switch(type) {
-    case 'follower':
-      secs = CONFIG.follower;
-      label = '👤 ' + (username || 'Seguidor') + ' te siguió';
-      break;
-    case 'sub':
-      secs = CONFIG.sub;
-      label = '⭐ ' + (username || 'Sub') + ' se suscribió';
-      break;
-    case 'resub':
-      secs = CONFIG.resub;
-      label = '🔄 ' + (username || 'Resub') + ' renovó';
-      break;
-    case 'donation':
-      secs = Math.round((amount || 1) * CONFIG.donation);
-      label = '💜 ' + (username || 'Donación') + ' donó ' + (amount || 1) + '€';
-      break;
-    case 'bits':
-      secs = Math.round((amount / CONFIG.bitsPerUnit) * CONFIG.bitsSeconds);
-      label = '💎 ' + (username || 'Bits') + ' dio ' + amount + ' bits';
-      break;
-    case 'raid': {
-      const viewers = amount || 0;
-      if (viewers < 3) {
-        console.log('[Raid] Ignorado, menos de 3 viewers:', viewers);
-        return;
-      }
-      secs = viewers * CONFIG.raidPerViewer;
-      label = '⚔️ ' + (username || 'Raid') + ' trajo ' + viewers + ' viewers';
-      break;
-    }
-    case 'custom':
-      secs = Math.round((amount || 0) * 60);
-      label = secs >= 0 ? '⏱️ +Tiempo manual' : '⏱️ −Tiempo manual';
-      break;
-    default:
-      return;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Panel Stream</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0d0f14;
+    color: #f0f0f0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    gap: 8px;
   }
 
-  if (secs === 0 && type !== 'custom') return;
+  header {
+    width: 100%; max-width: 460px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  h1 { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.4); letter-spacing: 0.1em; text-transform: uppercase; }
+  .conn-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; color: rgba(255,255,255,0.3); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #444; }
+  .dot.on { background: #4adeaa; box-shadow: 0 0 5px #4adeaa; }
+  .dot.err { background: #ff5555; }
 
-  // Registrar contribuidor
-  if (username && secs > 0) {
-    contributors[username] = (contributors[username] || 0) + secs;
-    console.log('[contrib]', username, '->', Math.floor(contributors[username] / 60) + 'min');
+  .setup {
+    width: 100%; max-width: 460px;
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px; padding: 10px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .setup-row { display: flex; gap: 6px; }
+  .setup input {
+    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 7px; padding: 7px 10px; color: #f0f0f0; font-size: 13px; outline: none;
+  }
+  .setup input:focus { border-color: rgba(74,222,170,0.4); }
+  .btn-connect {
+    padding: 7px 14px; background: rgba(74,222,170,0.1); border: 1px solid rgba(74,222,170,0.3);
+    border-radius: 7px; color: #4adeaa; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
   }
 
-  // Sumar al contador
-  currentRemaining = Math.max(0, currentRemaining + secs);
-  saveState();
+  .timer-display {
+    width: 100%; max-width: 460px;
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 12px; text-align: center;
+  }
+  .timer-label { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; }
+  .timer-value { font-size: 52px; font-weight: 700; letter-spacing: -2px; font-family: monospace; color: #fff; font-variant-numeric: tabular-nums; }
+  .timer-value.low { color: #ff5555; }
 
-  // Notificar a todos
-  broadcastOverlay({ type, amount, username, secs, label });
-  broadcastAll({ type: 'sync_time', remaining: currentRemaining });
+  .card {
+    width: 100%; max-width: 460px;
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px; padding: 10px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .card-label { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.08em; }
 
-  // Mandar evento al panel para el historial
-  const mins = Math.round(secs / 60);
-  const panelData = JSON.stringify({ remaining: currentRemaining, paused: serverPaused, eventLog: { name: label, mins, label: (secs >= 0 ? '+' : '') + mins + ' min' } });
-  for (const c of panels) if (c.readyState === 1) c.send(panelData);
+  .stream-row { display: flex; gap: 8px; align-items: center; }
+  .hours-input {
+    width: 70px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 7px; padding: 7px 10px; color: #f0f0f0; font-size: 14px; font-weight: 700;
+    text-align: center; outline: none; font-family: monospace;
+  }
+  .hours-label { font-size: 12px; color: rgba(255,255,255,0.3); }
+  .btn-stream {
+    flex: 1; padding: 10px;
+    border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer;
+    border: 1px solid rgba(74,222,170,0.4); background: rgba(74,222,170,0.1); color: #4adeaa;
+    transition: transform 0.1s;
+  }
+  .btn-stream:active { transform: scale(0.97); }
+  .btn-stream.live { background: rgba(255,85,85,0.1); border-color: rgba(255,85,85,0.4); color: #ff6b6b; }
 
-  // Confeti si suma más de 120 min
-  if (secs >= 120 * 60) broadcastOverlay2({ type: 'confetti' });
+  .controls-row { display: flex; gap: 8px; }
+  .btn-ctrl {
+    flex: 1; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.6);
+    transition: transform 0.1s;
+  }
+  .btn-ctrl:active { transform: scale(0.97); }
+  .btn-ctrl.pause { color: #f9a825; border-color: rgba(249,168,37,0.3); background: rgba(249,168,37,0.08); }
+  .btn-ctrl.muted { color: #ff6b6b; border-color: rgba(255,85,85,0.3); background: rgba(255,85,85,0.08); }
 
-  // Alerta en overlay2
-  broadcastOverlay2({ type, username, seconds: secs, amount, viewers: amount });
+  .time-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+  .btn-time {
+    padding: 12px 6px; border-radius: 10px; font-size: 15px; font-weight: 700;
+    cursor: pointer; border: none; transition: transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-time:active { transform: scale(0.95); }
+  .btn-add { background: rgba(74,222,170,0.12); color: #4adeaa; border: 1px solid rgba(74,222,170,0.25); }
+  .btn-sub { background: rgba(255,85,85,0.1); color: #ff6b6b; border: 1px solid rgba(255,85,85,0.2); }
 
-  console.log('[Evento]', type, username || '', '+' + Math.floor(secs/60) + 'min', '=', Math.floor(currentRemaining/60) + 'min total');
-}
+  .custom-row { display: flex; gap: 6px; }
+  .custom-input {
+    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 8px 10px; color: #f0f0f0; font-size: 16px;
+    font-weight: 700; text-align: center; outline: none; font-family: monospace;
+  }
+  .btn-custom {
+    padding: 8px 14px; border-radius: 8px; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: transform 0.1s;
+  }
+  .btn-custom:active { transform: scale(0.96); }
+  .btn-cadd { background: rgba(74,222,170,0.12); color: #4adeaa; border: 1px solid rgba(74,222,170,0.25); }
+  .btn-csub { background: rgba(255,85,85,0.1); color: #ff6b6b; border: 1px solid rgba(255,85,85,0.2); }
 
-// ── WebSocket ─────────────────────────────────────────────────
-const server = http.createServer((req, res) => {
-  res.writeHead(200);
-  res.end('Stream Counter Server OK');
-});
+  /* Top5 */
+  .top5-list { display: flex; flex-direction: column; gap: 4px; }
+  .top5-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 8px; border-radius: 7px;
+    background: rgba(255,255,255,0.03); font-size: 12px;
+  }
+  .top5-rank { font-size: 14px; width: 20px; text-align: center; }
+  .top5-name { flex: 1; color: #f0f0f0; font-weight: 500; }
+  .top5-mins { color: #4adeaa; font-weight: 700; font-size: 13px; }
+  .top5-empty { font-size: 12px; color: rgba(255,255,255,0.2); text-align: center; padding: 8px 0; }
 
-const wss       = new WebSocketServer({ server });
-const overlays  = new Set();
-const overlays2 = new Set();
-const panels    = new Set();
-const ttsClients = new Set();
+  .log-list { max-height: 100px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
+  .log-item { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .log-item:last-child { border-bottom: none; }
+  .log-name { color: rgba(255,255,255,0.4); }
+  .log-added.pos { color: #4adeaa; font-weight: 600; }
+  .log-added.neg { color: #ff6b6b; font-weight: 600; }
+  .log-time { color: rgba(255,255,255,0.2); }
 
-wss.on('connection', (ws) => {
-  console.log('[+] Cliente conectado');
+  .toast {
+    position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%) translateY(60px);
+    background: #1e2030; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 6px 16px; font-size: 12px; color: #f0f0f0;
+    transition: transform 0.3s; pointer-events: none; white-space: nowrap; z-index: 999;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
 
-  ws.on('message', (raw) => {
-    let msg;
-    try { msg = JSON.parse(raw); } catch { return; }
+<header>
+  <h1>Panel Stream</h1>
+  <div class="conn-badge"><div class="dot" id="dot"></div><span id="conn-label">sin conectar</span></div>
+</header>
 
-    // Identificación
-    if (msg.role === 'overlay') {
-      overlays.add(ws);
-      // Sincronizar tiempo y estado al conectar
-      ws.send(JSON.stringify({ type: 'set_time', amount: currentRemaining / 60 }));
-      if (serverPaused) ws.send(JSON.stringify({ type: 'toggle' }));
-      console.log('[overlay] Registrado, total:', overlays.size);
-      return;
-    }
-    if (msg.role === 'overlay2') { overlays2.add(ws); console.log('[overlay2] Registrado'); return; }
-    if (msg.role === 'panel')    { panels.add(ws);    ws.send(JSON.stringify({ remaining: currentRemaining, paused: serverPaused })); console.log('[panel] Registrado'); return; }
-    if (msg.role === 'tts')      { ttsClients.add(ws); console.log('[TTS] Registrado'); return; }
+<div class="setup">
+  <div class="setup-row">
+    <input type="text" id="ws-url" placeholder="wss://servidor.railway.app" />
+  </div>
+  <div class="setup-row">
+    <input type="password" id="ws-secret" placeholder="clave secreta" />
+    <button class="btn-connect" onclick="connectWS()">Conectar</button>
+  </div>
+</div>
 
-    // Eventos de StreamElements (vienen del overlay)
-    if (msg.role === 'event') {
-      if (!msg.eventId || recentEvents.has(msg.eventId)) return;
-      recentEvents.set(msg.eventId, Date.now());
-      setTimeout(() => recentEvents.delete(msg.eventId), 15000);
-      processEvent(msg.type, msg.amount || 0, msg.username || '');
-      return;
-    }
+<div class="timer-display">
+  <div class="timer-label">tiempo en stream</div>
+  <div class="timer-value" id="timer-val">--:--:--</div>
+</div>
 
-    // Comandos del panel (requieren clave)
-    if (msg.secret !== SECRET) { console.warn('[-] Clave incorrecta'); return; }
+<div class="card">
+  <div class="card-label">stream</div>
+  <div class="stream-row">
+    <input class="hours-input" type="number" id="init-hours" value="4" min="0" max="24" step="0.5" />
+    <span class="hours-label">horas iniciales</span>
+    <button class="btn-stream" id="btn-stream" onclick="toggleStream()">▶ Iniciar Stream</button>
+  </div>
+  <div class="controls-row" id="playback-wrap" style="display:none;">
+    <button class="btn-ctrl pause" id="btn-pause" onclick="sendPlayback('toggle')">⏸ Pausar</button>
+    <button class="btn-ctrl muted" id="btn-mute" onclick="toggleMute()">🔊 Sonido</button>
+  </div>
+</div>
 
-    console.log('[Panel]', msg.type, msg.amount || '');
+<div class="card">
+  <div class="card-label">tiempo rápido</div>
+  <div class="time-grid">
+    <button class="btn-time btn-add" onclick="sendTime(60)">+60</button>
+    <button class="btn-time btn-add" onclick="sendTime(30)">+30</button>
+    <button class="btn-time btn-add" onclick="sendTime(15)">+15</button>
+    <button class="btn-time btn-sub" onclick="sendTime(-60)">−60</button>
+    <button class="btn-time btn-sub" onclick="sendTime(-30)">−30</button>
+    <button class="btn-time btn-sub" onclick="sendTime(-15)">−15</button>
+  </div>
+  <div class="custom-row">
+    <input class="custom-input" type="number" id="custom-mins" placeholder="min" min="0" step="1" />
+    <button class="btn-custom btn-cadd" onclick="sendCustom(1)">+</button>
+    <button class="btn-custom btn-csub" onclick="sendCustom(-1)">−</button>
+  </div>
+</div>
 
-    switch(msg.type) {
-      case 'set_time':
-        currentRemaining = Math.round((msg.amount || 0) * 60);
-        saveState();
-        broadcastAll({ type: 'sync_time', remaining: currentRemaining });
-        break;
-      case 'toggle':
-        serverPaused = !serverPaused;
-        saveState();
-        broadcastOverlay({ type: 'toggle' });
-        break;
-      case 'reset':
-        currentRemaining = 0; streamStartTime = null; serverPaused = false;
-        saveState();
-        Object.keys(contributors).forEach(k => delete contributors[k]);
-        broadcastOverlay({ type: 'reset' });
-        broadcastAll({ type: 'sync_time', remaining: 0 });
-        break;
-      case 'start_stream':
-        streamStartTime = Date.now();
-        saveState();
-        console.log('[Stream] Inicio registrado');
-        break;
-      case 'mute':
-        broadcastOverlay({ type: 'mute', amount: msg.amount || 0 });
-        break;
-      case 'custom':
-        processEvent('custom', msg.amount || 0, '');
-        break;
-    }
+<div class="card">
+  <div class="card-label">🏆 top 5</div>
+  <div class="top5-list" id="top5-list"><div class="top5-empty">Sin datos</div></div>
+</div>
+
+<div class="card">
+  <div class="card-label">historial</div>
+  <div class="log-list" id="log-list"><div class="top5-empty">Sin eventos</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const medals = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣'];
+let ws = null, secret = '', logs = [];
+let paused = false;
+let muted = localStorage.getItem('muted') === 'true';
+let streamLive = localStorage.getItem('streamLive') === 'true';
+
+function connectWS() {
+  const url = document.getElementById('ws-url').value.trim();
+  secret = document.getElementById('ws-secret').value.trim();
+  if (!url) return showToast('Introduce la URL');
+  localStorage.setItem('ws_url', url);
+  localStorage.setItem('ws_secret', secret);
+  if (ws) ws.close();
+  setStatus('connecting');
+  ws = new WebSocket(url);
+  ws.addEventListener('open', () => {
+    setStatus('on');
+    ws.send(JSON.stringify({ role: 'panel' }));
+    showToast('Conectado ✓');
   });
-
-  ws.on('close', () => {
-    overlays.delete(ws); overlays2.delete(ws);
-    panels.delete(ws); ttsClients.delete(ws);
-    console.log('[-] Cliente desconectado');
+  ws.addEventListener('message', (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.remaining !== undefined) syncTimer(msg.remaining, msg.paused);
+      if (msg.top5 !== undefined) updateTop5(msg.top5);
+      if (msg.eventLog) addLog(msg.eventLog.name, msg.eventLog.mins, msg.eventLog.label);
+    } catch {}
   });
-});
-
-function broadcastOverlay(payload) {
-  const data = JSON.stringify(payload);
-  for (const c of overlays) if (c.readyState === 1) c.send(data);
-  if (payload.type === 'tts') {
-    for (const c of ttsClients) if (c.readyState === 1) c.send(data);
-  }
+  ws.addEventListener('close', () => { setStatus('off'); showToast('Desconectado'); });
+  ws.addEventListener('error', () => setStatus('err'));
 }
 
-function broadcastOverlay2(payload) {
-  const data = JSON.stringify(payload);
-  for (const c of overlays2) if (c.readyState === 1) c.send(data);
+function send(payload) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('No conectado'); return false; }
+  ws.send(JSON.stringify({ secret, ...payload }));
+  return true;
 }
 
-function broadcastAll(payload) {
-  const data = JSON.stringify(payload);
-  for (const c of [...overlays, ...panels]) if (c.readyState === 1) c.send(data);
-}
-
-// ── Countdown del servidor ────────────────────────────────────
-setInterval(() => {
-  if (!serverPaused && currentRemaining > 0) currentRemaining--;
-  // Mandar tiempo a panels cada segundo
-  const top5 = Object.entries(contributors).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  const data = JSON.stringify({ remaining: currentRemaining, paused: serverPaused, top5 });
-  for (const c of panels) if (c.readyState === 1) c.send(data);
-  // Sincronizar overlay cada 30 segundos para corregir desvíos
-  if (currentRemaining % 30 === 0) {
-    broadcastOverlay({ type: 'set_time', amount: currentRemaining / 60 });
-  }
-}, 1000);
-
-// Guardar en Redis cada 10 segundos
-setInterval(saveState, 10000);
-
-server.listen(PORT, '0.0.0.0', () => console.log('[OK] Servidor en puerto', PORT));
-
-// ── Twitch ────────────────────────────────────────────────────
-function fmtTime(secs) {
+function syncTimer(secs, isPaused) {
+  const el = document.getElementById('timer-val');
   const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
-  if (h > 0) return h+'h '+m+'m '+s+'s';
-  if (m > 0) return m+'m '+s+'s';
-  return s+'s';
+  el.textContent = [h,m,s].map(n=>String(Math.floor(n)).padStart(2,'0')).join(':');
+  el.className = 'timer-value' + (secs <= 60 && secs > 0 ? ' low' : '');
+  if (isPaused !== undefined) {
+    paused = isPaused;
+    updatePauseBtn(isPaused);
+  }
 }
 
-let lastTopTime = 0;
-
-function connectTwitch() {
-  if (!TWITCH_TOKEN) { console.warn('[Twitch] Sin token'); return; }
-  const tc = new tmi.Client({
-    identity: { username: TWITCH_USER, password: TWITCH_TOKEN },
-    channels: [TWITCH_USER],
-    options: { debug: false },
-  });
-  tc.connect().then(() => console.log('[Twitch] Conectado')).catch(err => {
-    console.error('[Twitch] Error:', err);
-    setTimeout(connectTwitch, 10000);
-  });
-  tc.on('message', (channel, tags, message, self) => {
-    if (self) return;
-    const msg2 = message.trim().toLowerCase();
-
-    if (msg2 === '!top') {
-      const now = Date.now();
-      if (now - lastTopTime < 60000) { tc.say(channel, '⏳ !top disponible en ' + Math.ceil((60000-(now-lastTopTime))/1000) + 's'); return; }
-      lastTopTime = now;
-      const sorted = Object.entries(contributors).sort((a,b)=>b[1]-a[1]).slice(0,5);
-      if (!sorted.length) { tc.say(channel, 'Aun no hay contribuidores!'); return; }
-      broadcastOverlay2({ type: 'top', top5: sorted });
-      tc.say(channel, '🏆 Top contribuidores:');
-      sorted.forEach(([u,s],i) => setTimeout(() => tc.say(channel, ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣'][i]+' '+u+' — '+Math.floor(s/60)+' min'), i*600));
-      return;
-    }
-    if (msg2 === '!mitiempo') {
-      const s = contributors[tags.username] || 0;
-      tc.say(channel, s ? '@'+tags.username+' has sumado '+Math.floor(s/60)+' min! 🕐' : '@'+tags.username+' aun no has sumado tiempo!');
-      return;
-    }
-    if (msg2 === '!record') {
-      const sorted = Object.entries(contributors).sort((a,b)=>b[1]-a[1]);
-      tc.say(channel, sorted.length ? '🏆 Record: '+sorted[0][0]+' con '+Math.floor(sorted[0][1]/60)+' min!' : 'Sin contribuidores aun!');
-      return;
-    }
-    if (msg2.startsWith('!tts ')) {
-      const isMod = tags.mod || tags.badges?.broadcaster;
-      const isSub = tags.subscriber || tags.badges?.subscriber || tags.badges?.founder;
-      if (!isMod && !isSub) { tc.say(channel, '@'+tags.username+' !tts es solo para subs y mods.'); return; }
-      const text = message.trim().slice(5).trim();
-      if (text) broadcastOverlay({ type: 'tts', text: tags.username+' dice: '+text });
-      return;
-    }
-    if (msg2 === '!extensible') {
-      const elapsed = streamStartTime ? Math.floor((Date.now()-streamStartTime)/1000) : null;
-      tc.say(channel, currentRemaining > 0
-        ? (elapsed ? 'Transcurrido: '+fmtTime(elapsed)+' | ' : '')+'Tiempo restante: '+fmtTime(currentRemaining)
-        : 'El contador esta en 0!');
-    }
-  });
-  tc.on('disconnected', () => setTimeout(connectTwitch, 10000));
+function updatePauseBtn(isPaused) {
+  const btn = document.getElementById('btn-pause');
+  btn.textContent = isPaused ? '▶ Reanudar' : '⏸ Pausar';
 }
 
-// ── Discord ───────────────────────────────────────────────────
-const COMMANDS = {
-  '!seguidor': 'follower', '!sub': 'sub', '!resub': 'resub',
-  '!raid': 'raid', '!donacion': 'donation', '!bits': 'bits',
-};
+function toggleStream() {
+  if (!streamLive) {
+    const hours = parseFloat(document.getElementById('init-hours').value) || 4;
+    const mins = hours * 60;
+    send({ type: 'set_time', amount: mins });
+    send({ type: 'start_stream' });
+    streamLive = true;
+    localStorage.setItem('streamLive', 'true');
+    document.getElementById('btn-stream').textContent = '⏹ Terminar Stream';
+    document.getElementById('btn-stream').classList.add('live');
+    document.getElementById('playback-wrap').style.display = 'flex';
+    addLog('Stream iniciado', mins, hours + 'h');
+    showToast('▶ Stream iniciado con ' + hours + 'h');
+  } else {
+    streamLive = false;
+    localStorage.setItem('streamLive', 'false');
+    document.getElementById('btn-stream').textContent = '▶ Iniciar Stream';
+    document.getElementById('btn-stream').classList.remove('live');
+    document.getElementById('playback-wrap').style.display = 'none';
+    addLog('Stream terminado', 0, '⏹');
+    showToast('⏹ Stream terminado');
+  }
+}
 
-const dc = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
-dc.on('clientReady', () => console.log('[OK] Discord:', dc.user.tag));
-dc.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
-  const parts = message.content.trim().split(/\s+/);
-  const cmd = parts[0].toLowerCase();
-  const arg = parseFloat(parts[1]) || 0;
+function sendPlayback(action) {
+  if (!send({ type: action })) return;
+}
 
-  if (COMMANDS[cmd]) {
-    processEvent(COMMANDS[cmd], arg, message.author.username);
-    message.reply('✓ Evento añadido');
-    return;
+function toggleMute() {
+  muted = !muted;
+  localStorage.setItem('muted', muted);
+  send({ type: 'mute', amount: muted ? 1 : 0 });
+  updateMuteBtn();
+  showToast(muted ? '🔇 Silenciado' : '🔊 Sonido activado');
+}
+
+function updateMuteBtn() {
+  const btn = document.getElementById('btn-mute');
+  btn.textContent = muted ? '🔇 Silenciado' : '🔊 Sonido';
+  btn.className = 'btn-ctrl' + (muted ? ' muted' : '');
+}
+
+function sendTime(mins) {
+  if (!send({ type: 'custom', amount: mins })) return;
+  addLog('Manual', mins * 60, (mins > 0 ? '+' : '') + mins + ' min');
+  showToast((mins > 0 ? '+' : '') + mins + ' min');
+}
+
+function sendCustom(sign) {
+  const val = parseFloat(document.getElementById('custom-mins').value) || 0;
+  if (val <= 0) { showToast('Introduce los minutos'); return; }
+  const mins = sign * val;
+  if (!send({ type: 'custom', amount: mins })) return;
+  addLog('Personalizado', mins * 60, (mins > 0 ? '+' : '') + mins + ' min');
+  showToast((mins > 0 ? '+' : '') + mins + ' min');
+  document.getElementById('custom-mins').value = '';
+}
+
+function updateTop5(data) {
+  const list = document.getElementById('top5-list');
+  if (!data || !data.length) { list.innerHTML = '<div class="top5-empty">Sin datos</div>'; return; }
+  list.innerHTML = data.slice(0,5).map(([u,s],i) =>
+    `<div class="top5-item"><span class="top5-rank">${medals[i]}</span><span class="top5-name">${u}</span><span class="top5-mins">${Math.floor(s/60)} min</span></div>`
+  ).join('');
+}
+
+function addLog(name, secs, label) {
+  const now = new Date();
+  const t = [now.getHours(),now.getMinutes(),now.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+  logs.unshift({ name, secs, label, t });
+  if (logs.length > 30) logs.pop();
+  document.getElementById('log-list').innerHTML = logs.map(l =>
+    `<div class="log-item"><span class="log-name">${l.name}</span><span class="log-added ${l.secs>=0?'pos':'neg'}">${l.label}</span><span class="log-time">${l.t}</span></div>`
+  ).join('');
+}
+
+function setStatus(state) {
+  document.getElementById('dot').className = 'dot ' + (state==='on'?'on':state==='err'?'err':'');
+  document.getElementById('conn-label').textContent = state==='on'?'conectado':state==='connecting'?'conectando…':state==='err'?'error':'sin conectar';
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const url = localStorage.getItem('ws_url');
+  const sec = localStorage.getItem('ws_secret');
+  if (url) document.getElementById('ws-url').value = url;
+  if (sec) document.getElementById('ws-secret').value = sec;
+
+  if (streamLive) {
+    document.getElementById('btn-stream').textContent = '⏹ Terminar Stream';
+    document.getElementById('btn-stream').classList.add('live');
+    document.getElementById('playback-wrap').style.display = 'flex';
   }
 
-  switch(cmd) {
-    case '!sumar':
-      if (!arg) { message.reply('Uso: !sumar 3'); return; }
-      processEvent('custom', arg, '');
-      message.reply('+' + arg + ' min añadidos'); break;
-    case '!quitar':
-      if (!arg) { message.reply('Uso: !quitar 3'); return; }
-      processEvent('custom', -arg, '');
-      message.reply('-' + arg + ' min quitados'); break;
-    case '!pausar':
-      serverPaused = !serverPaused; saveState();
-      broadcastOverlay({ type: 'toggle' });
-      message.reply(serverPaused ? 'Pausado' : 'Reanudado'); break;
-    case '!reiniciar':
-      currentRemaining = 0; streamStartTime = null; serverPaused = false; saveState();
-      Object.keys(contributors).forEach(k => delete contributors[k]);
-      broadcastOverlay({ type: 'reset' });
-      broadcastAll({ type: 'sync_time', remaining: 0 });
-      message.reply('Reiniciado'); break;
-    case '!settimer':
-      if (!arg) { message.reply('Uso: !settimer 180'); return; }
-      currentRemaining = Math.round(arg * 60); saveState();
-      broadcastAll({ type: 'sync_time', remaining: currentRemaining });
-      message.reply('Contador ajustado a ' + arg + ' min'); break;
-  }
+  updateMuteBtn();
+
+  document.getElementById('custom-mins').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendCustom(1);
+  });
 });
-
-async function main() {
-  await loadState();
-  connectTwitch();
-  dc.login(DISCORD_TOKEN);
-}
-
-main();
+</script>
+</body>
+</html>
