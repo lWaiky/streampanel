@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <title>TTS</title>
+<script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE"></script>
 </head>
 <body>
 <script>
@@ -20,21 +21,12 @@ function processQueue() {
   if (playing || queue.length === 0) return;
   playing = true;
   const text = queue.shift();
-
-  // Google Translate TTS (sin API key)
-  const url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=es&client=tw-ob&q=' + encodeURIComponent(text);
-  const audio = new Audio(url);
-  audio.volume = 1.0;
-  audio.onended = () => { playing = false; processQueue(); };
-  audio.onerror = (err) => {
-    console.error('Error TTS:', err);
-    playing = false;
-    processQueue();
-  };
-  audio.play().catch(err => {
-    console.error('Play error:', err);
-    playing = false;
-    processQueue();
+  responsiveVoice.speak(text, 'Spanish Female', {
+    rate: 1,
+    pitch: 1,
+    volume: 1,
+    onend: () => { playing = false; processQueue(); },
+    onerror: () => { playing = false; processQueue(); }
   });
 }
 
