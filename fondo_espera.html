@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Viendo una peli — onlyflan_es</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #080510;
+  color: #fff;
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+canvas#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+.content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  width: 100%;
+  max-width: 900px;
+  padding: 2rem;
+  text-align: center;
+}
+
+.streamer-name {
+  font-size: 16px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(192, 132, 252, 0.5);
+}
+
+.title {
+  font-size: clamp(40px, 7vw, 72px);
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  color: #fff;
+}
+
+.title span { color: #c084fc; text-shadow: 0 0 40px rgba(192,132,252,0.4); }
+
+.subtitle {
+  font-size: clamp(16px, 2.5vw, 22px);
+  color: rgba(255,255,255,0.35);
+  line-height: 1.6;
+}
+
+.subtitle strong { color: #c084fc; }
+
+.divider {
+  width: 60px; height: 2px;
+  background: linear-gradient(90deg, transparent, #c084fc, transparent);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+.info-card {
+  background: rgba(192, 132, 252, 0.05);
+  border: 1px solid rgba(192, 132, 252, 0.12);
+  border-radius: 12px;
+  padding: 16px 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+
+.info-card-icon { font-size: 22px; }
+.info-card-title { font-size: 13px; font-weight: 700; color: #c084fc; }
+.info-card-desc { font-size: 12px; color: rgba(255,255,255,0.35); line-height: 1.4; }
+
+.commands {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+}
+
+.cmd {
+  background: rgba(192, 132, 252, 0.07);
+  border: 1px solid rgba(192, 132, 252, 0.18);
+  border-radius: 8px; padding: 5px 12px;
+  font-size: 13px; font-weight: 700; color: #c084fc;
+}
+.cmd span { font-weight: 400; color: rgba(255,255,255,0.3); margin-left: 5px; }
+
+/* Pulso de espera */
+.pulse-ring {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  border: 2px solid rgba(192,132,252,0.3);
+  display: flex; align-items: center; justify-content: center;
+  animation: ringPulse 2s ease-in-out infinite;
+  position: relative;
+}
+.pulse-ring::before {
+  content: '';
+  position: absolute;
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  border: 2px solid rgba(192,132,252,0.15);
+  animation: ringPulse 2s ease-in-out infinite 0.5s;
+}
+.pulse-icon { font-size: 32px; }
+
+@keyframes ringPulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<div class="content">
+  <div class="streamer-name">onlyflan_es</div>
+
+  <div class="pulse-ring"><span class="pulse-icon">🎬</span></div>
+
+  <div class="title">Viendo una <span>peli</span></div>
+
+  <div class="subtitle">
+    El stream sigue en marcha, ¡estamos viendo una peli!<br>
+    Aprovecha para sumar tiempo al contador mientras tanto.
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="info-card-icon">👤</div>
+      <div class="info-card-title">Seguidor</div>
+      <div class="info-card-desc">+5 min al contador</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon">⭐</div>
+      <div class="info-card-title">Suscripción</div>
+      <div class="info-card-desc">+40 min al contador</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon">⚔️</div>
+      <div class="info-card-title">Raid</div>
+      <div class="info-card-desc">+2 min por viewer</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon">💎</div>
+      <div class="info-card-title">Bits</div>
+      <div class="info-card-desc">+20 min por 100 bits</div>
+    </div>
+  </div>
+
+  <div class="commands">
+    <div class="cmd">!extensible <span>tiempo restante</span></div>
+    <div class="cmd">!top <span>top contribuidores</span></div>
+    <div class="cmd">!mitiempo <span>tu tiempo sumado</span></div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let particles = [];
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+
+for (let i = 0; i < 70; i++) {
+  particles.push({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    r: Math.random() * 2 + 0.3,
+    vx: (Math.random() - 0.5) * 0.2,
+    vy: (Math.random() - 0.5) * 0.2,
+    o: Math.random() * 0.3 + 0.05,
+  });
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (const p of particles) {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(192,132,252,${p.o})`;
+    ctx.fill();
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = canvas.width;
+    if (p.x > canvas.width) p.x = 0;
+    if (p.y < 0) p.y = canvas.height;
+    if (p.y > canvas.height) p.y = 0;
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+
+</body>
+</html>
