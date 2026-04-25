@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>TTS</title>
+</head>
+<body>
+<script>
+const WS_URL = 'wss://stream-counter-server-production.up.railway.app';
+const SECRET = 'CAMBIA_ESTO_POR_UNA_CLAVE_SECRETA'; // igual que en el servidor
+
+let socket = null;
+let queue = [];
+let speaking = false;
+
+function speak(text) {
+  queue.push(text);
+  processQueue();
+}
+
+function processQueue() {
+  if (speaking || queue.length === 0) return;
+  speaking = true;
+  const text = queue.shift();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'es-ES';
+  utt.rate = 1.0;
+  utt.pitch = 1.0;
+  utt.volume = 1.0;
+
+  const voices = window.speechSynthesis.getVoices();
+  const esVoice = voices.find(v => v.lang.startsWith('es'));
+  if (esVoice) utt.voice = esVoice;
+
+  utt.onend = () => { speaking = false; processQueue(); };
+  utt.onerror = () => { speaking = false; processQueue(); };
+  window.speechSynthesis.speak(utt);
+}
+
+// Cargar voces
+window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+
+function connectWS() {
+  try { socket = new WebSocket(WS_URL); } catch(e) { setTimeout(connectWS, 5000); return; }
+
+  socket.addEventListener('open', () => {
+    socket.send(JSON.stringify({ role: 'tts' }));
+    console.log('[TTS] Conectado');
+  });
+
+  socket.addEventListener('message', (e) => {
+    let msg;
+    try { msg = JSON.parse(e.data); } catch { return; }
+    if (msg.type === 'tts' && msg.text) {
+      speak(msg.text);
+    }
+  });
+
+  socket.addEventListener('close', () => {
+    socket = null;
+    setTimeout(connectWS, 5000);
+  });
+}
+
+// Necesita interacción para activar el audio en el navegador
+document.addEventListener('click', () => {
+  window.speechSynthesis.cancel();
+}, { once: true });
+
+connectWS();
+</script>
+</body>
+</html>
