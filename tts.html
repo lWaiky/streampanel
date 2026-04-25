@@ -7,7 +7,6 @@
 <body>
 <script>
 const WS_URL = 'wss://stream-counter-server-production.up.railway.app';
-const VOICE = 'es-ES-Standard-A'; // voz en español
 
 let queue = [];
 let playing = false;
@@ -22,37 +21,37 @@ function processQueue() {
   playing = true;
   const text = queue.shift();
 
-  // StreamElements TTS API
-  const url = `https://api.streamelements.com/kappa/v2/speech?voice=${VOICE}&text=${encodeURIComponent(text)}`;
+  // Google Translate TTS (sin API key)
+  const url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=es&client=tw-ob&q=' + encodeURIComponent(text);
   const audio = new Audio(url);
   audio.volume = 1.0;
   audio.onended = () => { playing = false; processQueue(); };
-  audio.onerror = () => { playing = false; processQueue(); };
-  audio.play().catch(() => { playing = false; processQueue(); });
+  audio.onerror = (err) => {
+    console.error('Error TTS:', err);
+    playing = false;
+    processQueue();
+  };
+  audio.play().catch(err => {
+    console.error('Play error:', err);
+    playing = false;
+    processQueue();
+  });
 }
 
 let socket = null;
 
 function connectWS() {
   try { socket = new WebSocket(WS_URL); } catch(e) { setTimeout(connectWS, 5000); return; }
-
   socket.addEventListener('open', () => {
     socket.send(JSON.stringify({ role: 'tts' }));
     console.log('[TTS] Conectado');
   });
-
   socket.addEventListener('message', (e) => {
     let msg;
     try { msg = JSON.parse(e.data); } catch { return; }
-    if (msg.type === 'tts' && msg.text) {
-      speak(msg.text);
-    }
+    if (msg.type === 'tts' && msg.text) speak(msg.text);
   });
-
-  socket.addEventListener('close', () => {
-    socket = null;
-    setTimeout(connectWS, 5000);
-  });
+  socket.addEventListener('close', () => { socket = null; setTimeout(connectWS, 5000); });
 }
 
 connectWS();
