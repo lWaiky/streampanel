@@ -7,11 +7,10 @@
 <body>
 <script>
 const WS_URL = 'wss://stream-counter-server-production.up.railway.app';
-const SECRET = 'CAMBIA_ESTO_POR_UNA_CLAVE_SECRETA'; // igual que en el servidor
+const VOICE = 'es-ES-Standard-A'; // voz en español
 
-let socket = null;
 let queue = [];
-let speaking = false;
+let playing = false;
 
 function speak(text) {
   queue.push(text);
@@ -19,26 +18,20 @@ function speak(text) {
 }
 
 function processQueue() {
-  if (speaking || queue.length === 0) return;
-  speaking = true;
+  if (playing || queue.length === 0) return;
+  playing = true;
   const text = queue.shift();
-  const utt = new SpeechSynthesisUtterance(text);
-  utt.lang = 'es-ES';
-  utt.rate = 1.0;
-  utt.pitch = 1.0;
-  utt.volume = 1.0;
 
-  const voices = window.speechSynthesis.getVoices();
-  const esVoice = voices.find(v => v.lang.startsWith('es'));
-  if (esVoice) utt.voice = esVoice;
-
-  utt.onend = () => { speaking = false; processQueue(); };
-  utt.onerror = () => { speaking = false; processQueue(); };
-  window.speechSynthesis.speak(utt);
+  // StreamElements TTS API
+  const url = `https://api.streamelements.com/kappa/v2/speech?voice=${VOICE}&text=${encodeURIComponent(text)}`;
+  const audio = new Audio(url);
+  audio.volume = 1.0;
+  audio.onended = () => { playing = false; processQueue(); };
+  audio.onerror = () => { playing = false; processQueue(); };
+  audio.play().catch(() => { playing = false; processQueue(); });
 }
 
-// Cargar voces
-window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+let socket = null;
 
 function connectWS() {
   try { socket = new WebSocket(WS_URL); } catch(e) { setTimeout(connectWS, 5000); return; }
@@ -61,11 +54,6 @@ function connectWS() {
     setTimeout(connectWS, 5000);
   });
 }
-
-// Necesita interacción para activar el audio en el navegador
-document.addEventListener('click', () => {
-  window.speechSynthesis.cancel();
-}, { once: true });
 
 connectWS();
 </script>
