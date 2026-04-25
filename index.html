@@ -193,6 +193,14 @@
   .top5-name { flex: 1; color: var(--text, #f0f0f0); font-weight: 500; }
   .top5-mins { color: #4adeaa; font-weight: 700; font-size: 14px; }
   .top5-empty { font-size: 13px; color: rgba(255,255,255,0.2); text-align: center; padding: 1rem 0; }
+  .btn-restore {
+    width: 100%; max-width: 420px;
+    padding: 12px;
+    border-radius: 12px; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: 1px solid rgba(249,168,37,0.4);
+    background: rgba(249,168,37,0.1); color: #f9a825;
+    display: none;
+  }
   .toast {
     position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px);
     background: #1e2030; border: 1px solid rgba(255,255,255,0.1);
@@ -211,6 +219,8 @@
     <span id="conn-label">sin conectar</span>
   </div>
 </header>
+
+<button class="btn-restore" id="restore-btn" onclick="restoreTime()">⚠️ Railway se reinició — Restaurar tiempo guardado</button>
 
 <div class="setup">
   <label>Servidor WebSocket</label>
@@ -403,8 +413,36 @@ function updatePauseBtn(isPaused) {
   document.getElementById('btn-pause').textContent = isPaused ? '▶ Reanudar' : '⏸ Pausar';
 }
 
+let lastKnownTime = 0;
+
 function syncTimer(secs) {
+  // Detectar si el servidor se reinició (bajó más de 10 min de golpe)
+  if (lastKnownTime > 0 && lastKnownTime - secs > 600) {
+    const saved = parseInt(localStorage.getItem('savedTime') || '0');
+    if (saved > secs) {
+      showToast('⚠️ Railway se reinició. Tiempo guardado: ' + renderTimeStr(saved));
+      document.getElementById('restore-btn').style.display = 'block';
+      document.getElementById('restore-btn').dataset.secs = saved;
+    }
+  }
+  lastKnownTime = secs;
+  // Guardar el tiempo cada vez que llega
+  if (secs > 60) localStorage.setItem('savedTime', secs);
   renderTimer(secs);
+}
+
+function renderTimeStr(secs) {
+  const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
+  return [h,m,s].map(n=>String(Math.floor(n)).padStart(2,'0')).join(':');
+}
+
+function restoreTime() {
+  const btn = document.getElementById('restore-btn');
+  const secs = parseInt(btn.dataset.secs || '0');
+  const mins = secs / 60;
+  if (!send({ type: 'set_time', amount: mins })) return;
+  showToast('✓ Tiempo restaurado a ' + renderTimeStr(secs));
+  btn.style.display = 'none';
 }
 
 function renderTimer(secs) {
