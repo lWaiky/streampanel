@@ -225,6 +225,7 @@
 const medals = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣'];
 let ws = null, secret = '', logs = [];
 let paused = false;
+const seenLogIds = new Set();
 let muted = localStorage.getItem('muted') === 'true';
 let streamLive = localStorage.getItem('streamLive') === 'true';
 let connected = false;
@@ -251,7 +252,13 @@ function connectWS() {
       const msg = JSON.parse(e.data);
       if (msg.remaining !== undefined) syncTimer(msg.remaining, msg.paused);
       if (msg.top5 !== undefined) updateTop5(msg.top5);
-      if (msg.eventLog) addLog(msg.eventLog.name, msg.eventLog.mins, msg.eventLog.label);
+      if (msg.eventLog) {
+        const id = msg.eventLog.id;
+        if (!id || !seenLogIds.has(id)) {
+          if (id) { seenLogIds.add(id); if (seenLogIds.size > 200) seenLogIds.clear(); }
+          addLog(msg.eventLog.name, msg.eventLog.mins, msg.eventLog.label);
+        }
+      }
     } catch {}
   });
   ws.addEventListener('close', () => {
