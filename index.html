@@ -1,464 +1,504 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Extensible — onlyflan_es</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Panel Stream</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0d0f14;
+    color: #f0f0f0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 1rem;
+    gap: 1rem;
+  }
+  header {
+    width: 100%; max-width: 420px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  h1 { font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.5); letter-spacing: 0.1em; text-transform: uppercase; }
+  .conn-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,0.35); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #444; flex-shrink: 0; }
+  .dot.on { background: #4adeaa; box-shadow: 0 0 6px #4adeaa; }
+  .dot.err { background: #ff5555; }
 
-body {
-  background: #080510;
-  color: #fff;
-  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  position: relative;
-}
+  .setup {
+    width: 100%; max-width: 420px;
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 1rem;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .setup label { font-size: 11px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.08em; }
+  .setup input {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 8px 12px; color: #f0f0f0; font-size: 14px; outline: none; width: 100%;
+  }
+  .setup input:focus { border-color: rgba(74,222,170,0.4); }
+  .btn-connect {
+    padding: 9px; background: rgba(74,222,170,0.1); border: 1px solid rgba(74,222,170,0.3);
+    border-radius: 8px; color: #4adeaa; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .btn-connect:hover { background: rgba(74,222,170,0.2); }
 
-/* Fondo con partículas */
-canvas#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .timer-display {
+    width: 100%; max-width: 420px;
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px; padding: 1.5rem 1rem; text-align: center;
+  }
+  .timer-label { font-size: 11px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .timer-value { font-size: 64px; font-weight: 700; letter-spacing: -3px; font-family: monospace; color: #fff; }
+  .timer-value.low { color: #ff5555; }
 
-.content {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 32px;
-  width: 100%;
-  max-width: 900px;
-  padding: 2rem;
-}
+  .playback {
+    width: 100%; max-width: 420px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .btn-play {
+    padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600;
+    cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn-play:active { transform: scale(0.97); }
+  .btn-pause { background: rgba(249,168,37,0.15); color: #f9a825; border: 1px solid rgba(249,168,37,0.3); }
+  .btn-reset { background: rgba(255,85,85,0.1); color: #ff5555; border: 1px solid rgba(255,85,85,0.25); }
 
-/* Nombre */
-.streamer-name {
-  font-size: 18px;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: rgba(192, 132, 252, 0.6);
-}
+  .time-btns { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 8px; }
+  .time-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .btn-time {
+    padding: 16px 8px; border-radius: 12px; font-size: 16px; font-weight: 700;
+    cursor: pointer; border: none; transition: transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-time:active { transform: scale(0.95); }
+  .btn-add { background: rgba(74,222,170,0.12); color: #4adeaa; border: 1px solid rgba(74,222,170,0.25); }
+  .btn-add:hover { background: rgba(74,222,170,0.2); }
+  .btn-sub { background: rgba(255,85,85,0.1); color: #ff6b6b; border: 1px solid rgba(255,85,85,0.2); }
+  .btn-sub:hover { background: rgba(255,85,85,0.18); }
 
-/* Título */
-.title {
-  font-size: clamp(36px, 6vw, 64px);
-  font-weight: 700;
-  letter-spacing: -1px;
-  text-align: center;
-  line-height: 1.1;
-  color: #fff;
-}
+  .custom-card {
+    width: 100%; max-width: 420px;
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 1rem;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .custom-card label { font-size: 11px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.08em; }
+  .custom-row { display: flex; gap: 8px; }
+  .custom-input {
+    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 10px 12px; color: #f0f0f0; font-size: 16px;
+    font-weight: 600; outline: none; text-align: center;
+  }
+  .custom-input:focus { border-color: rgba(74,222,170,0.4); }
+  .custom-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn-custom-add {
+    padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 700;
+    cursor: pointer; border: 1px solid rgba(74,222,170,0.25);
+    background: rgba(74,222,170,0.12); color: #4adeaa; transition: transform 0.1s;
+  }
+  .btn-custom-add:active { transform: scale(0.96); }
+  .btn-custom-sub {
+    padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 700;
+    cursor: pointer; border: 1px solid rgba(255,85,85,0.2);
+    background: rgba(255,85,85,0.1); color: #ff6b6b; transition: transform 0.1s;
+  }
+  .btn-custom-sub:active { transform: scale(0.96); }
 
-.title span {
-  color: #c084fc;
-  text-shadow: 0 0 40px rgba(192, 132, 252, 0.4);
-}
+  .divider { width: 100%; max-width: 420px; height: 1px; background: rgba(255,255,255,0.06); }
 
-/* Contador */
-.counter-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
+  .log-wrap {
+    width: 100%; max-width: 420px;
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 1rem;
+  }
+  .log-title { font-size: 11px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .log-list { max-height: 160px; overflow-y: auto; }
+  .log-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+  .log-item:last-child { border-bottom: none; }
+  .log-name { color: rgba(255,255,255,0.45); }
+  .log-added { font-weight: 600; }
+  .log-added.pos { color: #4adeaa; }
+  .log-added.neg { color: #ff6b6b; }
+  .log-time { color: rgba(255,255,255,0.2); font-size: 11px; }
+  .log-empty { font-size: 13px; color: rgba(255,255,255,0.2); text-align: center; padding: 1rem 0; }
 
-.counter-label {
-  font-size: 13px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: rgba(192, 132, 252, 0.5);
-}
 
-.counter {
-  font-size: clamp(72px, 14vw, 140px);
-  font-weight: 700;
-  letter-spacing: -4px;
-  font-variant-numeric: tabular-nums;
-  font-family: 'Rajdhani', monospace;
-  color: #fff;
-  text-shadow: 0 0 60px rgba(192, 132, 252, 0.3);
-  line-height: 1;
-}
-
-.counter.low { color: #f87171; text-shadow: 0 0 40px rgba(248, 113, 113, 0.4); }
-
-/* Barra */
-.bar-wrap {
-  width: min(500px, 80vw);
-  height: 4px;
-  background: rgba(192, 132, 252, 0.1);
-  border-radius: 2px;
-  overflow: hidden;
-}
-.bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #7c3aed, #c084fc);
-  border-radius: 2px;
-  transition: width 1s linear;
-}
-
-/* Info */
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  width: 100%;
-}
-
-.info-card {
-  background: rgba(192, 132, 252, 0.06);
-  border: 1px solid rgba(192, 132, 252, 0.15);
-  border-radius: 12px;
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.info-card-icon { font-size: 20px; }
-.info-card-title { font-size: 14px; font-weight: 700; color: #c084fc; letter-spacing: 0.05em; }
-.info-card-desc { font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.4; }
-
-/* Comandos */
-.commands {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-}
-
-.cmd {
-  background: rgba(192, 132, 252, 0.08);
-  border: 1px solid rgba(192, 132, 252, 0.2);
-  border-radius: 8px;
-  padding: 6px 14px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #c084fc;
-  letter-spacing: 0.05em;
-}
-
-.cmd span {
-  font-weight: 400;
-  color: rgba(255,255,255,0.35);
-  margin-left: 6px;
-}
-
-/* Inicio */
-.start-time {
-  font-size: 15px;
-  color: rgba(255,255,255,0.3);
-  text-align: center;
-  line-height: 1.6;
-}
-
-.start-time strong {
-  color: #c084fc;
-  font-weight: 700;
-}
-
-/* Separador decorativo */
-.divider {
-  width: 60px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #c084fc, transparent);
-}
-
-/* Animación borde */
-@keyframes pulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
-}
-
-/* ── Animaciones eventos ── */
-.counter.jump {
-  animation: counterJump 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-@keyframes counterJump {
-  0%   { transform: scale(1); }
-  40%  { transform: scale(1.08); text-shadow: 0 0 80px rgba(192,132,252,0.9); }
-  100% { transform: scale(1); }
-}
-
-#event-alert {
-  position: fixed;
-  bottom: 120px;
-  left: 50%;
-  transform: translateX(-50%) translateY(40px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  background: rgba(10, 5, 20, 0.92);
-  border: 2px solid rgba(192, 132, 252, 0.7);
-  clip-path: polygon(16px 0%, calc(100% - 16px) 0%, 100% 16px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 16px 100%, 0% calc(100% - 16px), 0% 8px);
-  padding: 16px 40px;
-  text-align: center;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
-  opacity: 0;
-  transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  pointer-events: none;
-  min-width: 320px;
-  z-index: 100;
-}
-
-#event-alert.visible {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
-#event-alert.hiding {
-  opacity: 0;
-  transform: translateX(-50%) translateY(20px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.ev-icon { font-size: 28px; line-height: 1; }
-.ev-type { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(192,132,252,0.6); }
-.ev-user { font-size: 28px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
-.ev-time { font-size: 18px; font-weight: 700; color: #4adeaa; }
-.ev-bar { width: 100%; height: 2px; background: rgba(255,255,255,0.08); border-radius: 1px; overflow: hidden; margin-top: 6px; }
-.ev-bar-fill { height: 100%; background: linear-gradient(90deg, #7c3aed, #c084fc); animation: barShrink2 linear forwards; }
-@keyframes barShrink2 { 0% { transform: scaleX(1); transform-origin: left; } 100% { transform: scaleX(0); transform-origin: left; } }
-
-/* Partículas de evento */
-.event-particle {
-  position: fixed;
-  pointer-events: none;
-  border-radius: 50%;
-  animation: particleFloat ease-out forwards;
-}
-@keyframes particleFloat {
-  0%   { opacity: 1; transform: translateY(0) scale(1); }
-  100% { opacity: 0; transform: translateY(-120px) scale(0.3); }
-}
+  .init-card {
+    width: 100%; max-width: 420px;
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 1rem;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .init-card label { font-size: 11px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.08em; }
+  .init-row { display: flex; gap: 8px; align-items: center; }
+  .init-input {
+    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 10px 12px; color: #f0f0f0; font-size: 20px;
+    font-weight: 700; outline: none; text-align: center; font-family: monospace;
+  }
+  .init-input:focus { border-color: rgba(74,222,170,0.4); }
+  .btn-init {
+    padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: 1px solid rgba(74,222,170,0.3);
+    background: rgba(74,222,170,0.12); color: #4adeaa; white-space: nowrap;
+    transition: transform 0.1s;
+  }
+  .btn-init:active { transform: scale(0.96); }
+  .btn-stream {
+    width: 100%; max-width: 420px;
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid rgba(74,222,170,0.4);
+    background: rgba(74,222,170,0.15);
+    color: #4adeaa;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: transform 0.1s, background 0.2s;
+  }
+  .btn-stream:active { transform: scale(0.97); }
+  .btn-stream.live { background: rgba(255,85,85,0.15); border-color: rgba(255,85,85,0.4); color: #ff6b6b; }
+  .extras-row {
+    width: 100%; max-width: 420px;
+    display: flex; gap: 8px;
+  }
+  .btn-mute {
+    flex: 1; padding: 12px;
+    border-radius: 12px; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.6);
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-mute:active { transform: scale(0.97); }
+  .btn-mute.muted { background: rgba(255,85,85,0.1); color: #ff6b6b; border-color: rgba(255,85,85,0.25); }
+  .top5-card {
+    width: 100%; max-width: 420px;
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 1rem;
+  }
+  .top5-title { font-size: 11px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .top5-list { display: flex; flex-direction: column; gap: 6px; }
+  .top5-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px;
+    background: rgba(255,255,255,0.03);
+    font-size: 13px;
+  }
+  .top5-rank { font-size: 16px; width: 24px; text-align: center; }
+  .top5-name { flex: 1; color: var(--text, #f0f0f0); font-weight: 500; }
+  .top5-mins { color: #4adeaa; font-weight: 700; font-size: 14px; }
+  .top5-empty { font-size: 13px; color: rgba(255,255,255,0.2); text-align: center; padding: 1rem 0; }
+  .btn-restore {
+    width: 100%; max-width: 420px;
+    padding: 12px;
+    border-radius: 12px; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: 1px solid rgba(249,168,37,0.4);
+    background: rgba(249,168,37,0.1); color: #f9a825;
+    display: none;
+  }
+  .toast {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #1e2030; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px; padding: 8px 20px; font-size: 13px; color: #f0f0f0;
+    transition: transform 0.3s ease; pointer-events: none; white-space: nowrap; z-index: 999;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 
-<canvas id="bg"></canvas>
-<div id="event-alert"></div>
-
-<div class="content">
-  <div class="streamer-name">onlyflan_es</div>
-
-  <div class="title">El stream es <span>extensible</span></div>
-
-  <div class="counter-wrap">
-    <div class="counter-label">tiempo acumulado</div>
-    <div class="counter" id="counter">00:00:00</div>
-    <div class="bar-wrap"><div class="bar-fill" id="bar" style="width:0%"></div></div>
+<header>
+  <h1>Panel Stream</h1>
+  <div class="conn-badge">
+    <div class="dot" id="dot"></div>
+    <span id="conn-label">sin conectar</span>
   </div>
+</header>
 
-  <div class="divider"></div>
+<button class="btn-restore" id="restore-btn" onclick="restoreTime()">⚠️ Railway se reinició — Restaurar tiempo guardado</button>
 
-  <div class="info-grid">
-    <div class="info-card">
-      <div class="info-card-icon">👤</div>
-      <div class="info-card-title">Seguidor</div>
-      <div class="info-card-desc">Seguir el canal suma <strong style="color:#c084fc">10 min</strong> al contador.</div>
-    </div>
-    <div class="info-card">
-      <div class="info-card-icon">⭐</div>
-      <div class="info-card-title">Suscripción</div>
-      <div class="info-card-desc">Suscribirte suma <strong style="color:#c084fc">60 min</strong> al contador. Los gift subs se multiplican.</div>
-    </div>
-    <div class="info-card">
-      <div class="info-card-icon">⚔️</div>
-      <div class="info-card-title">Raid</div>
-      <div class="info-card-desc">Cada viewer del raid suma <strong style="color:#c084fc">3 min</strong>. Mínimo 3 personas.</div>
-    </div>
-    <div class="info-card">
-      <div class="info-card-icon">💎</div>
-      <div class="info-card-title">Bits</div>
-      <div class="info-card-desc">Cada 100 bits suman <strong style="color:#c084fc">30 min</strong> al contador.</div>
-    </div>
-  </div>
+<div class="setup">
+  <label>Servidor WebSocket</label>
+  <input type="text" id="ws-url" placeholder="wss://tu-servidor.railway.app" />
+  <label>Clave secreta</label>
+  <input type="password" id="ws-secret" placeholder="tu clave secreta" />
+  <button class="btn-connect" onclick="connectWS()">Conectar</button>
+</div>
 
-  <div class="commands">
-    <div class="cmd">!extensible <span>tiempo restante + transcurrido</span></div>
-    <div class="cmd">!top <span>top 5 contribuidores</span></div>
-    <div class="cmd">!mitiempo <span>tu tiempo sumado</span></div>
-    <div class="cmd">!record <span>quien más ha sumado</span></div>
-    <div class="cmd">!tts mensaje <span>texto a voz (subs y mods)</span></div>
-  </div>
+<div class="timer-display">
+  <div class="timer-label">tiempo en stream</div>
+  <div class="timer-value" id="timer-val">--:--:--</div>
+</div>
 
-  <div class="start-time">
-    El directo empieza <strong>mañana a las 16:00h</strong> (hora española)<br>
-    ¡Pero ya puedes colaborar y sumar tiempo!
+<div class="playback">
+  <button class="btn-play btn-pause" id="btn-pause" onclick="sendPlayback('toggle')">⏸ Pausar</button>
+  <button class="btn-play btn-reset" onclick="sendPlayback('reset')">↺ Reiniciar</button>
+</div>
+
+
+<div class="init-card">
+  <label>horas iniciales del contador</label>
+  <div class="init-row">
+    <input class="init-input" type="number" id="init-hours" value="4" min="0" max="24" step="0.5" />
+    <button class="btn-init" onclick="sendInitHours()">Aplicar</button>
   </div>
 </div>
 
-<script>
-// ── Contador ─────────────────────────────────────────────────
-const WS_URL = 'wss://stream-counter-server-production.up.railway.app';
-let remaining = 0;
-let maxTime = 0;
-let socket = null;
+<button class="btn-stream" id="btn-stream" onclick="toggleStream()">▶ Iniciar Stream</button>
 
-function pad(n) { return String(Math.floor(Math.abs(n))).padStart(2,'0'); }
-function fmt(s) {
-  return pad(s/3600) + ':' + pad((s%3600)/60) + ':' + pad(s%60);
+<div class="extras-row">
+  <button class="btn-mute" id="btn-mute" onclick="toggleMute()">🔊 Sonido activado</button>
+</div>
+
+<div class="top5-card">
+  <div class="top5-title">🏆 top 5 contribuidores</div>
+  <div class="top5-list" id="top5-list">
+    <div class="top5-empty">Sin datos todavía</div>
+  </div>
+</div>
+
+<div class="time-btns">
+  <div class="time-row">
+    <button class="btn-time btn-add" onclick="sendTime(60)">+60 min</button>
+    <button class="btn-time btn-add" onclick="sendTime(30)">+30 min</button>
+    <button class="btn-time btn-add" onclick="sendTime(15)">+15 min</button>
+  </div>
+  <div class="time-row">
+    <button class="btn-time btn-sub" onclick="sendTime(-60)">−60 min</button>
+    <button class="btn-time btn-sub" onclick="sendTime(-30)">−30 min</button>
+    <button class="btn-time btn-sub" onclick="sendTime(-15)">−15 min</button>
+  </div>
+</div>
+
+<div class="custom-card">
+  <label>tiempo personalizado (minutos)</label>
+  <div class="custom-row">
+    <input class="custom-input" type="number" id="custom-mins" placeholder="0" min="0" step="1" />
+  </div>
+  <div class="custom-btns">
+    <button class="btn-custom-add" onclick="sendCustom(1)">+ Añadir</button>
+    <button class="btn-custom-sub" onclick="sendCustom(-1)">− Quitar</button>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="log-wrap">
+  <div class="log-title">historial de sesión</div>
+  <div class="log-list" id="log-list">
+    <div class="log-empty">Sin eventos todavía</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let ws = null, secret = '', logs = [], paused = false;
+
+let muted = false;
+const medals = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣'];
+
+function toggleMute() {
+  muted = !muted;
+  const btn = document.getElementById('btn-mute');
+  btn.textContent = muted ? '🔇 Sonido silenciado' : '🔊 Sonido activado';
+  btn.className = 'btn-mute' + (muted ? ' muted' : '');
+  if (!send({ type: 'mute', amount: muted ? 1 : 0 })) return;
+  showToast(muted ? '🔇 Sonido silenciado' : '🔊 Sonido activado');
 }
 
-function updateCounter() {
-  const el = document.getElementById('counter');
-  const bar = document.getElementById('bar');
-  el.textContent = fmt(remaining);
-  el.className = 'counter' + (remaining <= 60 && remaining > 0 ? ' low' : '');
-  if (maxTime > 0) {
-    bar.style.width = Math.min(100, (remaining / maxTime) * 100) + '%';
+function updateTop5(data) {
+  const list = document.getElementById('top5-list');
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div class="top5-empty">Sin datos todavía</div>';
+    return;
+  }
+  list.innerHTML = data.slice(0, 5).map(([user, secs], i) => {
+    const m = Math.floor(secs / 60);
+    return '<div class="top5-item">' +
+      '<span class="top5-rank">' + medals[i] + '</span>' +
+      '<span class="top5-name">' + user + '</span>' +
+      '<span class="top5-mins">' + m + ' min</span>' +
+    '</div>';
+  }).join('');
+}
+
+
+let streamLive = false;
+
+function toggleStream() {
+  if (!streamLive) {
+    if (!send({ type: 'start_stream' })) return;
+    streamLive = true;
+    const btn = document.getElementById('btn-stream');
+    btn.textContent = '⏹ Terminar Stream';
+    btn.classList.add('live');
+    addLog('Stream iniciado', 0, '▶ live');
+    showToast('▶ Stream iniciado');
+  } else {
+    streamLive = false;
+    const btn = document.getElementById('btn-stream');
+    btn.textContent = '▶ Iniciar Stream';
+    btn.classList.remove('live');
+    addLog('Stream terminado', 0, '⏹ off');
+    showToast('⏹ Stream terminado');
   }
 }
 
-// Sin countdown local — solo muestra lo que manda el servidor
 
 function connectWS() {
-  try { socket = new WebSocket(WS_URL); } catch(e) { setTimeout(connectWS, 5000); return; }
-  socket.addEventListener('open', () => {
-    socket.send(JSON.stringify({ role: 'panel' }));
-  });
-  socket.addEventListener('message', (e) => {
+  const url = document.getElementById('ws-url').value.trim();
+  secret = document.getElementById('ws-secret').value.trim();
+  if (!url) return showToast('Introduce la URL del servidor');
+  localStorage.setItem('ws_url', url);
+  localStorage.setItem('ws_secret', secret);
+  if (ws) ws.close();
+  setStatus('connecting');
+  ws = new WebSocket(url);
+  ws.addEventListener('open', () => { setStatus('on'); showToast('Conectado ✓'); ws.send(JSON.stringify({ role: 'panel' })); });
+  ws.addEventListener('message', (e) => {
     try {
       const msg = JSON.parse(e.data);
-      if (msg.remaining !== undefined) {
-        remaining = msg.remaining;
-        if (remaining > maxTime) maxTime = remaining;
-        updateCounter();
-      }
+      if (msg.remaining !== undefined) syncTimer(msg.remaining);
+      if (msg.top5 !== undefined) updateTop5(msg.top5);
+      if (msg.paused !== undefined) updatePauseBtn(msg.paused);
     } catch {}
   });
-  socket.addEventListener('close', () => { socket = null; setTimeout(connectWS, 5000); });
-}
-connectWS();
-
-// ── Partículas de fondo ───────────────────────────────────────
-const canvas = document.getElementById('bg');
-const ctx = canvas.getContext('2d');
-let particles = [];
-
-function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-resize();
-window.addEventListener('resize', resize);
-
-for (let i = 0; i < 60; i++) {
-  particles.push({
-    x: Math.random() * window.innerWidth,
-    y: Math.random() * window.innerHeight,
-    r: Math.random() * 2 + 0.5,
-    vx: (Math.random() - 0.5) * 0.3,
-    vy: (Math.random() - 0.5) * 0.3,
-    o: Math.random() * 0.4 + 0.1,
-  });
+  ws.addEventListener('close', () => { setStatus('off'); showToast('Desconectado'); });
+  ws.addEventListener('error', () => setStatus('err'));
 }
 
-function drawParticles() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (const p of particles) {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(192,132,252,${p.o})`;
-    ctx.fill();
-    p.x += p.vx; p.y += p.vy;
-    if (p.x < 0) p.x = canvas.width;
-    if (p.x > canvas.width) p.x = 0;
-    if (p.y < 0) p.y = canvas.height;
-    if (p.y > canvas.height) p.y = 0;
-  }
-  requestAnimationFrame(drawParticles);
-}
-drawParticles();
-
-// ── Animaciones de eventos ────────────────────────────────────
-const ALERT_CONFIG = {
-  follower: { icon: '👤', label: '¡Nuevo seguidor!',    color: '#4adeaa' },
-  sub:      { icon: '⭐', label: '¡Suscripción!',       color: '#c084fc' },
-  resub:    { icon: '🔄', label: '¡Renovación!',        color: '#a78bfa' },
-  raid:     { icon: '⚔️', label: '¡Raid!',              color: '#f9a825' },
-  donation: { icon: '💜', label: '¡Donación!',          color: '#f472b6' },
-  bits:     { icon: '💎', label: '¡Bits!',              color: '#38bdf8' },
-};
-
-let alertTimer = null;
-
-function showEventAlert(type, username, mins) {
-  const cfg = ALERT_CONFIG[type] || { icon: '⏱️', label: 'Evento', color: '#4adeaa' };
-  const el = document.getElementById('event-alert');
-  el.className = '';
-  el.style.borderColor = cfg.color + 'cc';
-  el.style.boxShadow = `0 0 30px ${cfg.color}55`;
-  el.innerHTML = `
-    <div class="ev-icon">${cfg.icon}</div>
-    <div class="ev-type">${cfg.label}</div>
-    <div class="ev-user">${username || 'Anónimo'}</div>
-    <div class="ev-time">+${mins} min</div>
-    <div class="ev-bar"><div class="ev-bar-fill" style="animation-duration:5000ms"></div></div>
-  `;
-  void el.offsetWidth;
-  el.classList.add('visible');
-
-  // Saltar contador
-  const counter = document.getElementById('counter');
-  counter.classList.remove('jump');
-  void counter.offsetWidth;
-  counter.classList.add('jump');
-  setTimeout(() => counter.classList.remove('jump'), 600);
-
-  // Partículas
-  launchParticles(cfg.color);
-
-  if (alertTimer) clearTimeout(alertTimer);
-  alertTimer = setTimeout(() => {
-    el.classList.add('hiding');
-    setTimeout(() => { el.className = ''; el.innerHTML = ''; }, 400);
-  }, 5000);
+function send(payload) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('No conectado'); return false; }
+  ws.send(JSON.stringify({ secret, ...payload }));
+  return true;
 }
 
-function launchParticles(color) {
-  for (let i = 0; i < 20; i++) {
-    setTimeout(() => {
-      const p = document.createElement('div');
-      p.className = 'event-particle';
-      const size = 4 + Math.random() * 6;
-      p.style.cssText = `
-        width:${size}px; height:${size}px;
-        background:${color};
-        left:${40 + Math.random() * 20}vw;
-        bottom:${100 + Math.random() * 80}px;
-        animation-duration:${0.8 + Math.random() * 0.8}s;
-      `;
-      document.body.appendChild(p);
-      setTimeout(() => p.remove(), 1600);
-    }, Math.random() * 400);
+function sendTime(mins) {
+  if (!send({ type: 'custom', amount: mins })) return;
+  addLog('Tiempo manual', mins, (mins > 0 ? '+' : '') + mins + ' min');
+  showToast(mins > 0 ? '✓ +' + mins + ' min' : '✓ ' + mins + ' min');
+}
+
+function sendCustom(sign) {
+  const val = parseFloat(document.getElementById('custom-mins').value) || 0;
+  if (val <= 0) { showToast('Introduce los minutos'); return; }
+  const mins = sign * val;
+  if (!send({ type: 'custom', amount: mins })) return;
+  addLog('Tiempo personalizado', mins, (mins > 0 ? '+' : '') + mins + ' min');
+  showToast(mins > 0 ? '✓ +' + mins + ' min' : '✓ ' + mins + ' min');
+  document.getElementById('custom-mins').value = '';
+}
+
+function sendPlayback(action) {
+  if (!send({ type: action })) return;
+  if (action === 'toggle') {
+    paused = !paused;
+    updatePauseBtn(paused);
+    showToast(paused ? '⏸ Pausado' : '▶ Reanudado');
+  } else if (action === 'reset') {
+    showToast('↺ Reiniciado');
+    paused = false;
+    updatePauseBtn(false);
   }
 }
 
-// Escuchar eventos del servidor
-const wsEspera = new WebSocket(WS_URL);
-wsEspera.addEventListener('open', () => {
-  wsEspera.send(JSON.stringify({ role: 'overlay2' }));
-});
-wsEspera.addEventListener('message', (e) => {
-  try {
-    const msg = JSON.parse(e.data);
-    const alertTypes = ['follower','sub','resub','raid','donation','bits'];
-    if (alertTypes.includes(msg.type) && msg.username) {
-      const mins = Math.round((msg.seconds || 0) / 60);
-      showEventAlert(msg.type, msg.username, mins);
+function updatePauseBtn(isPaused) {
+  paused = isPaused;
+  document.getElementById('btn-pause').textContent = isPaused ? '▶ Reanudar' : '⏸ Pausar';
+}
+
+let lastKnownTime = 0;
+
+function syncTimer(secs) {
+  // Detectar si el servidor se reinició (bajó más de 10 min de golpe)
+  if (lastKnownTime > 0 && lastKnownTime - secs > 600) {
+    const saved = parseInt(localStorage.getItem('savedTime') || '0');
+    if (saved > secs) {
+      showToast('⚠️ Railway se reinició. Tiempo guardado: ' + renderTimeStr(saved));
+      document.getElementById('restore-btn').style.display = 'block';
+      document.getElementById('restore-btn').dataset.secs = saved;
     }
-  } catch {}
+  }
+  lastKnownTime = secs;
+  // Guardar el tiempo cada vez que llega
+  if (secs > 60) localStorage.setItem('savedTime', secs);
+  renderTimer(secs);
+}
+
+function renderTimeStr(secs) {
+  const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
+  return [h,m,s].map(n=>String(Math.floor(n)).padStart(2,'0')).join(':');
+}
+
+function restoreTime() {
+  const btn = document.getElementById('restore-btn');
+  const secs = parseInt(btn.dataset.secs || '0');
+  const mins = secs / 60;
+  if (!send({ type: 'set_time', amount: mins })) return;
+  showToast('✓ Tiempo restaurado a ' + renderTimeStr(secs));
+  btn.style.display = 'none';
+}
+
+function renderTimer(secs) {
+  const el = document.getElementById('timer-val');
+  const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
+  el.textContent = [h,m,s].map(n=>String(Math.floor(n)).padStart(2,'0')).join(':');
+  el.className = 'timer-value' + (secs <= 60 && secs > 0 ? ' low' : '');
+}
+
+function addLog(name, mins, label) {
+  const now = new Date();
+  const t = [now.getHours(), now.getMinutes(), now.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+  logs.unshift({ name, mins, label, t });
+  if (logs.length > 50) logs.pop();
+  document.getElementById('log-list').innerHTML = logs.map(l =>
+    `<div class="log-item">
+      <span class="log-name">${l.name}</span>
+      <span class="log-added ${l.mins >= 0 ? 'pos' : 'neg'}">${l.label}</span>
+      <span class="log-time">${l.t}</span>
+    </div>`
+  ).join('');
+}
+
+function setStatus(state) {
+  document.getElementById('dot').className = 'dot ' + (state === 'on' ? 'on' : state === 'err' ? 'err' : '');
+  document.getElementById('conn-label').textContent = state === 'on' ? 'conectado' : state === 'connecting' ? 'conectando…' : state === 'err' ? 'error' : 'sin conectar';
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+
+function sendInitHours() {
+  const hours = parseFloat(document.getElementById('init-hours').value) || 4;
+  if (hours < 0) return showToast('Introduce un valor válido');
+  const mins = hours * 60;
+  if (!send({ type: 'set_time', amount: mins })) return;
+  addLog('Tiempo inicial', mins, hours + 'h');
+  showToast('✓ Contador ajustado a ' + hours + 'h');
+}
+window.addEventListener('DOMContentLoaded', () => {
+  const savedUrl = localStorage.getItem('ws_url');
+  const savedSecret = localStorage.getItem('ws_secret');
+  if (savedUrl) document.getElementById('ws-url').value = savedUrl;
+  if (savedSecret) document.getElementById('ws-secret').value = savedSecret;
+
+  document.getElementById('custom-mins').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendCustom(1);
+  });
 });
-wsEspera.addEventListener('close', () => setTimeout(() => location.reload(), 5000));
-
 </script>
-
 </body>
 </html>
