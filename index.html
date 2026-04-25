@@ -319,7 +319,7 @@ function updateTop5(data) {
 }
 
 
-let streamLive = false;
+let streamLive = localStorage.getItem('streamLive') === 'true';
 
 function toggleStream() {
   if (!streamLive) {
@@ -329,6 +329,7 @@ function toggleStream() {
     send({ type: 'set_time', amount: mins });
     send({ type: 'start_stream' });
     streamLive = true;
+    localStorage.setItem('streamLive', 'true');
     const btn = document.getElementById('btn-stream');
     btn.textContent = '⏹ Terminar Stream';
     btn.classList.add('live');
@@ -336,6 +337,7 @@ function toggleStream() {
     showToast('▶ Stream iniciado con ' + hours + 'h');
   } else {
     streamLive = false;
+    localStorage.setItem('streamLive', 'false');
     const btn = document.getElementById('btn-stream');
     btn.textContent = '▶ Iniciar Stream';
     btn.classList.remove('live');
@@ -450,6 +452,12 @@ function showToast(msg) {
 
 
 window.addEventListener('DOMContentLoaded', () => {
+  // Restaurar estado del botón de stream
+  if (streamLive) {
+    const btn = document.getElementById('btn-stream');
+    btn.textContent = '⏹ Terminar Stream';
+    btn.classList.add('live');
+  }
   const savedUrl = localStorage.getItem('ws_url');
   const savedSecret = localStorage.getItem('ws_secret');
   if (savedUrl) document.getElementById('ws-url').value = savedUrl;
