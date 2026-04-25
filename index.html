@@ -403,23 +403,8 @@ function updatePauseBtn(isPaused) {
   document.getElementById('btn-pause').textContent = isPaused ? '▶ Reanudar' : '⏸ Pausar';
 }
 
-let panelRemaining = 0;
-let panelInterval = null;
-
-function startPanelCountdown() {
-  if (panelInterval) clearInterval(panelInterval);
-  panelInterval = setInterval(() => {
-    if (panelRemaining > 0) {
-      panelRemaining--;
-      renderTimer(panelRemaining);
-    }
-  }, 1000);
-}
-
 function syncTimer(secs) {
-  panelRemaining = secs;
   renderTimer(secs);
-  startPanelCountdown();
 }
 
 function renderTimer(secs) {
