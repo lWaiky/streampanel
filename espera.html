@@ -173,11 +173,76 @@ canvas#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 }
+
+/* ── Animaciones eventos ── */
+.counter.jump {
+  animation: counterJump 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes counterJump {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.08); text-shadow: 0 0 80px rgba(192,132,252,0.9); }
+  100% { transform: scale(1); }
+}
+
+#event-alert {
+  position: fixed;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%) translateY(40px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: rgba(10, 5, 20, 0.92);
+  border: 2px solid rgba(192, 132, 252, 0.7);
+  clip-path: polygon(16px 0%, calc(100% - 16px) 0%, 100% 16px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 16px 100%, 0% calc(100% - 16px), 0% 8px);
+  padding: 16px 40px;
+  text-align: center;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  min-width: 320px;
+  z-index: 100;
+}
+
+#event-alert.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+#event-alert.hiding {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.ev-icon { font-size: 28px; line-height: 1; }
+.ev-type { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(192,132,252,0.6); }
+.ev-user { font-size: 28px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+.ev-time { font-size: 18px; font-weight: 700; color: #4adeaa; }
+.ev-bar { width: 100%; height: 2px; background: rgba(255,255,255,0.08); border-radius: 1px; overflow: hidden; margin-top: 6px; }
+.ev-bar-fill { height: 100%; background: linear-gradient(90deg, #7c3aed, #c084fc); animation: barShrink2 linear forwards; }
+@keyframes barShrink2 { 0% { transform: scaleX(1); transform-origin: left; } 100% { transform: scaleX(0); transform-origin: left; } }
+
+/* Partículas de evento */
+.event-particle {
+  position: fixed;
+  pointer-events: none;
+  border-radius: 50%;
+  animation: particleFloat ease-out forwards;
+}
+@keyframes particleFloat {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-120px) scale(0.3); }
+}
 </style>
 </head>
 <body>
 
 <canvas id="bg"></canvas>
+<div id="event-alert"></div>
 
 <div class="content">
   <div class="streamer-name">onlyflan_es</div>
@@ -311,6 +376,88 @@ function drawParticles() {
   requestAnimationFrame(drawParticles);
 }
 drawParticles();
+
+// ── Animaciones de eventos ────────────────────────────────────
+const ALERT_CONFIG = {
+  follower: { icon: '👤', label: '¡Nuevo seguidor!',    color: '#4adeaa' },
+  sub:      { icon: '⭐', label: '¡Suscripción!',       color: '#c084fc' },
+  resub:    { icon: '🔄', label: '¡Renovación!',        color: '#a78bfa' },
+  raid:     { icon: '⚔️', label: '¡Raid!',              color: '#f9a825' },
+  donation: { icon: '💜', label: '¡Donación!',          color: '#f472b6' },
+  bits:     { icon: '💎', label: '¡Bits!',              color: '#38bdf8' },
+};
+
+let alertTimer = null;
+
+function showEventAlert(type, username, mins) {
+  const cfg = ALERT_CONFIG[type] || { icon: '⏱️', label: 'Evento', color: '#4adeaa' };
+  const el = document.getElementById('event-alert');
+  el.className = '';
+  el.style.borderColor = cfg.color + 'cc';
+  el.style.boxShadow = `0 0 30px ${cfg.color}55`;
+  el.innerHTML = `
+    <div class="ev-icon">${cfg.icon}</div>
+    <div class="ev-type">${cfg.label}</div>
+    <div class="ev-user">${username || 'Anónimo'}</div>
+    <div class="ev-time">+${mins} min</div>
+    <div class="ev-bar"><div class="ev-bar-fill" style="animation-duration:5000ms"></div></div>
+  `;
+  void el.offsetWidth;
+  el.classList.add('visible');
+
+  // Saltar contador
+  const counter = document.getElementById('counter');
+  counter.classList.remove('jump');
+  void counter.offsetWidth;
+  counter.classList.add('jump');
+  setTimeout(() => counter.classList.remove('jump'), 600);
+
+  // Partículas
+  launchParticles(cfg.color);
+
+  if (alertTimer) clearTimeout(alertTimer);
+  alertTimer = setTimeout(() => {
+    el.classList.add('hiding');
+    setTimeout(() => { el.className = ''; el.innerHTML = ''; }, 400);
+  }, 5000);
+}
+
+function launchParticles(color) {
+  for (let i = 0; i < 20; i++) {
+    setTimeout(() => {
+      const p = document.createElement('div');
+      p.className = 'event-particle';
+      const size = 4 + Math.random() * 6;
+      p.style.cssText = `
+        width:${size}px; height:${size}px;
+        background:${color};
+        left:${40 + Math.random() * 20}vw;
+        bottom:${100 + Math.random() * 80}px;
+        animation-duration:${0.8 + Math.random() * 0.8}s;
+      `;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 1600);
+    }, Math.random() * 400);
+  }
+}
+
+// Escuchar eventos del servidor
+const wsEspera = new WebSocket(WS_URL);
+wsEspera.addEventListener('open', () => {
+  wsEspera.send(JSON.stringify({ role: 'overlay2' }));
+});
+wsEspera.addEventListener('message', (e) => {
+  try {
+    const msg = JSON.parse(e.data);
+    const alertTypes = ['follower','sub','resub','raid','donation','bits'];
+    if (alertTypes.includes(msg.type) && msg.username) {
+      const mins = Math.round((msg.seconds || 0) / 60);
+      showEventAlert(msg.type, msg.username, mins);
+    }
+  } catch {}
+});
+wsEspera.addEventListener('close', () => setTimeout(() => location.reload(), 5000));
+
 </script>
 
 </body>
