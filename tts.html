@@ -3,14 +3,28 @@
 <head>
 <meta charset="UTF-8" />
 <title>TTS</title>
-<script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE"></script>
 </head>
 <body>
+<button id="start" style="font-size:24px;padding:20px;margin:20px;">🔊 Activar TTS</button>
+<div id="status" style="font-size:16px;margin:20px;color:gray;">Sin conectar</div>
+<div id="last" style="font-size:20px;margin:20px;"></div>
+
 <script>
 const WS_URL = 'wss://stream-counter-server-production.up.railway.app';
 
 let queue = [];
 let playing = false;
+let activated = false;
+
+document.getElementById('start').addEventListener('click', () => {
+  activated = true;
+  document.getElementById('start').textContent = '✅ TTS Activado';
+  document.getElementById('start').disabled = true;
+  // Test de voz
+  const utt = new SpeechSynthesisUtterance('TTS activado');
+  utt.lang = 'es-ES';
+  window.speechSynthesis.speak(utt);
+});
 
 function speak(text) {
   queue.push(text);
@@ -18,17 +32,27 @@ function speak(text) {
 }
 
 function processQueue() {
-  if (playing || queue.length === 0) return;
+  if (playing || queue.length === 0 || !activated) return;
   playing = true;
   const text = queue.shift();
-  responsiveVoice.speak(text, 'Spanish Female', {
-    rate: 1,
-    pitch: 1,
-    volume: 1,
-    onend: () => { playing = false; processQueue(); },
-    onerror: () => { playing = false; processQueue(); }
-  });
+  document.getElementById('last').textContent = '🔊 ' + text;
+
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'es-ES';
+  utt.rate = 1.0;
+  utt.pitch = 1.0;
+  utt.volume = 1.0;
+
+  const voices = window.speechSynthesis.getVoices();
+  const esVoice = voices.find(v => v.lang.startsWith('es'));
+  if (esVoice) utt.voice = esVoice;
+
+  utt.onend = () => { playing = false; processQueue(); };
+  utt.onerror = () => { playing = false; processQueue(); };
+  window.speechSynthesis.speak(utt);
 }
+
+window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 
 let socket = null;
 
@@ -36,14 +60,20 @@ function connectWS() {
   try { socket = new WebSocket(WS_URL); } catch(e) { setTimeout(connectWS, 5000); return; }
   socket.addEventListener('open', () => {
     socket.send(JSON.stringify({ role: 'tts' }));
-    console.log('[TTS] Conectado');
+    document.getElementById('status').textContent = '✅ Conectado al servidor';
+    document.getElementById('status').style.color = 'green';
   });
   socket.addEventListener('message', (e) => {
     let msg;
     try { msg = JSON.parse(e.data); } catch { return; }
     if (msg.type === 'tts' && msg.text) speak(msg.text);
   });
-  socket.addEventListener('close', () => { socket = null; setTimeout(connectWS, 5000); });
+  socket.addEventListener('close', () => {
+    socket = null;
+    document.getElementById('status').textContent = '❌ Desconectado, reconectando...';
+    document.getElementById('status').style.color = 'red';
+    setTimeout(connectWS, 5000);
+  });
 }
 
 connectWS();
