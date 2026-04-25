@@ -251,9 +251,7 @@ function updateCounter() {
   }
 }
 
-setInterval(() => {
-  if (remaining > 0) { remaining--; updateCounter(); }
-}, 1000);
+// Sin countdown local — solo muestra lo que manda el servidor
 
 function connectWS() {
   try { socket = new WebSocket(WS_URL); } catch(e) { setTimeout(connectWS, 5000); return; }
