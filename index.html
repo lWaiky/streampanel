@@ -235,7 +235,7 @@
   <label>horas iniciales del contador</label>
   <div class="init-row">
     <input class="init-input" type="number" id="init-hours" value="4" min="0" max="24" step="0.5" />
-    <button class="btn-init" onclick="sendInitHours()">Aplicar</button>
+
   </div>
 </div>
 
@@ -323,13 +323,17 @@ let streamLive = false;
 
 function toggleStream() {
   if (!streamLive) {
-    if (!send({ type: 'start_stream' })) return;
+    // Aplicar horas iniciales al iniciar stream
+    const hours = parseFloat(document.getElementById('init-hours').value) || 4;
+    const mins = hours * 60;
+    send({ type: 'set_time', amount: mins });
+    send({ type: 'start_stream' });
     streamLive = true;
     const btn = document.getElementById('btn-stream');
     btn.textContent = '⏹ Terminar Stream';
     btn.classList.add('live');
-    addLog('Stream iniciado', 0, '▶ live');
-    showToast('▶ Stream iniciado');
+    addLog('Stream iniciado', mins, hours + 'h');
+    showToast('▶ Stream iniciado con ' + hours + 'h');
   } else {
     streamLive = false;
     const btn = document.getElementById('btn-stream');
@@ -354,7 +358,7 @@ function connectWS() {
   ws.addEventListener('message', (e) => {
     try {
       const msg = JSON.parse(e.data);
-      if (msg.remaining !== undefined) syncTimer(msg.remaining);
+      if (msg.remaining !== undefined) syncTimer(msg.remaining, msg.paused);
       if (msg.top5 !== undefined) updateTop5(msg.top5);
       if (msg.paused !== undefined) updatePauseBtn(msg.paused);
     } catch {}
@@ -387,15 +391,12 @@ function sendCustom(sign) {
 
 function sendPlayback(action) {
   if (!send({ type: action })) return;
-  if (action === 'toggle') {
-    paused = !paused;
-    updatePauseBtn(paused);
-    showToast(paused ? '⏸ Pausado' : '▶ Reanudado');
-  } else if (action === 'reset') {
+  if (action === 'reset') {
     showToast('↺ Reiniciado');
     paused = false;
     updatePauseBtn(false);
   }
+  // Para toggle no cambiamos estado local — esperamos confirmación del servidor
 }
 
 function updatePauseBtn(isPaused) {
@@ -403,8 +404,12 @@ function updatePauseBtn(isPaused) {
   document.getElementById('btn-pause').textContent = isPaused ? '▶ Reanudar' : '⏸ Pausar';
 }
 
-function syncTimer(secs) {
+function syncTimer(secs, isPaused) {
   renderTimer(secs);
+  if (isPaused !== undefined) {
+    paused = isPaused;
+    updatePauseBtn(isPaused);
+  }
 }
 
 function renderTimer(secs) {
@@ -443,14 +448,7 @@ function showToast(msg) {
 }
 
 
-function sendInitHours() {
-  const hours = parseFloat(document.getElementById('init-hours').value) || 4;
-  if (hours < 0) return showToast('Introduce un valor válido');
-  const mins = hours * 60;
-  if (!send({ type: 'set_time', amount: mins })) return;
-  addLog('Tiempo inicial', mins, hours + 'h');
-  showToast('✓ Contador ajustado a ' + hours + 'h');
-}
+
 window.addEventListener('DOMContentLoaded', () => {
   const savedUrl = localStorage.getItem('ws_url');
   const savedSecret = localStorage.getItem('ws_secret');
