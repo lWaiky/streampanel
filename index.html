@@ -225,9 +225,8 @@
   <div class="timer-value" id="timer-val">--:--:--</div>
 </div>
 
-<div class="playback">
+<div class="playback" id="playback-wrap" style="display:none;">
   <button class="btn-play btn-pause" id="btn-pause" onclick="sendPlayback('toggle')">⏸ Pausar</button>
-  <button class="btn-play btn-reset" onclick="sendPlayback('reset')">↺ Reiniciar</button>
 </div>
 
 
@@ -333,6 +332,7 @@ function toggleStream() {
     const btn = document.getElementById('btn-stream');
     btn.textContent = '⏹ Terminar Stream';
     btn.classList.add('live');
+    document.getElementById('playback-wrap').style.display = 'grid';
     addLog('Stream iniciado', mins, hours + 'h');
     showToast('▶ Stream iniciado con ' + hours + 'h');
   } else {
@@ -341,6 +341,7 @@ function toggleStream() {
     const btn = document.getElementById('btn-stream');
     btn.textContent = '▶ Iniciar Stream';
     btn.classList.remove('live');
+    document.getElementById('playback-wrap').style.display = 'none';
     addLog('Stream terminado', 0, '⏹ off');
     showToast('⏹ Stream terminado');
   }
@@ -457,6 +458,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('btn-stream');
     btn.textContent = '⏹ Terminar Stream';
     btn.classList.add('live');
+    document.getElementById('playback-wrap').style.display = 'grid';
   }
   const savedUrl = localStorage.getItem('ws_url');
   const savedSecret = localStorage.getItem('ws_secret');
