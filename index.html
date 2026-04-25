@@ -286,6 +286,7 @@ function toggleStream() {
   if (!streamLive) {
     const hours = parseFloat(document.getElementById('init-hours').value) || 4;
     const mins = hours * 60;
+    send({ type: 'reset_contributors' });
     send({ type: 'set_time', amount: mins });
     send({ type: 'start_stream' });
     streamLive = true;
@@ -353,6 +354,14 @@ function addLog(name, secs, label) {
   const t = [now.getHours(),now.getMinutes(),now.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
   logs.unshift({ name, secs, label, t });
   if (logs.length > 100) logs.pop();
+  localStorage.setItem('sessionLogs', JSON.stringify(logs));
+  document.getElementById('log-list').innerHTML = logs.map(l =>
+    `<div class="log-item"><span class="log-name">${l.name}</span><span class="log-added ${l.secs>=0?'pos':'neg'}">${l.label}</span><span class="log-time">${l.t}</span></div>`
+  ).join('');
+}
+
+function renderLogs() {
+  if (!logs.length) { document.getElementById('log-list').innerHTML = '<div class="top5-empty">Sin eventos</div>'; return; }
   document.getElementById('log-list').innerHTML = logs.map(l =>
     `<div class="log-item"><span class="log-name">${l.name}</span><span class="log-added ${l.secs>=0?'pos':'neg'}">${l.label}</span><span class="log-time">${l.t}</span></div>`
   ).join('');
@@ -372,6 +381,10 @@ function showToast(msg) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  // Cargar historial guardado
+  const savedLogs = localStorage.getItem('sessionLogs');
+  if (savedLogs) { try { logs = JSON.parse(savedLogs); renderLogs(); } catch {} }
+
   const url = localStorage.getItem('ws_url');
   const sec = localStorage.getItem('ws_secret');
   if (url) document.getElementById('ws-url').value = url;
