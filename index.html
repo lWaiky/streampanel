@@ -14,190 +14,130 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 1.5rem 1rem;
-    gap: 1rem;
+    padding: 1rem;
+    gap: 8px;
   }
+
   header {
-    width: 100%; max-width: 420px;
+    width: 100%; max-width: 460px;
     display: flex; justify-content: space-between; align-items: center;
   }
-  h1 { font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.5); letter-spacing: 0.1em; text-transform: uppercase; }
-  .conn-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,0.35); }
-  .dot { width: 7px; height: 7px; border-radius: 50%; background: #444; flex-shrink: 0; }
-  .dot.on { background: #4adeaa; box-shadow: 0 0 6px #4adeaa; }
+  h1 { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.4); letter-spacing: 0.1em; text-transform: uppercase; }
+  .conn-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; color: rgba(255,255,255,0.3); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #444; }
+  .dot.on { background: #4adeaa; box-shadow: 0 0 5px #4adeaa; }
   .dot.err { background: #ff5555; }
 
   .setup {
-    width: 100%; max-width: 420px;
+    width: 100%; max-width: 460px;
     background: #161820; border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 12px; padding: 1rem;
-    display: flex; flex-direction: column; gap: 8px;
+    border-radius: 10px; padding: 10px;
+    display: flex; flex-direction: column; gap: 6px;
   }
-  .setup label { font-size: 11px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.08em; }
+  .setup-row { display: flex; gap: 6px; }
   .setup input {
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px; padding: 8px 12px; color: #f0f0f0; font-size: 14px; outline: none; width: 100%;
+    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 7px; padding: 7px 10px; color: #f0f0f0; font-size: 13px; outline: none;
   }
   .setup input:focus { border-color: rgba(74,222,170,0.4); }
   .btn-connect {
-    padding: 9px; background: rgba(74,222,170,0.1); border: 1px solid rgba(74,222,170,0.3);
-    border-radius: 8px; color: #4adeaa; font-size: 14px; font-weight: 600; cursor: pointer;
+    padding: 7px 14px; background: rgba(74,222,170,0.1); border: 1px solid rgba(74,222,170,0.3);
+    border-radius: 7px; color: #4adeaa; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
   }
-  .btn-connect:hover { background: rgba(74,222,170,0.2); }
 
   .timer-display {
-    width: 100%; max-width: 420px;
+    width: 100%; max-width: 460px;
     background: #161820; border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 16px; padding: 1.5rem 1rem; text-align: center;
+    border-radius: 12px; padding: 12px; text-align: center;
   }
-  .timer-label { font-size: 11px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
-  .timer-value { font-size: 64px; font-weight: 700; letter-spacing: -3px; font-family: monospace; color: #fff; }
+  .timer-label { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; }
+  .timer-value { font-size: 52px; font-weight: 700; letter-spacing: -2px; font-family: monospace; color: #fff; font-variant-numeric: tabular-nums; }
   .timer-value.low { color: #ff5555; }
 
-  .playback {
-    width: 100%; max-width: 420px;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  .card {
+    width: 100%; max-width: 460px;
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px; padding: 10px;
+    display: flex; flex-direction: column; gap: 8px;
   }
-  .btn-play {
-    padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600;
-    cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s;
-  }
-  .btn-play:active { transform: scale(0.97); }
-  .btn-pause { background: rgba(249,168,37,0.15); color: #f9a825; border: 1px solid rgba(249,168,37,0.3); }
-  .btn-reset { background: rgba(255,85,85,0.1); color: #ff5555; border: 1px solid rgba(255,85,85,0.25); }
+  .card-label { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.08em; }
 
-  .time-btns { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 8px; }
-  .time-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stream-row { display: flex; gap: 8px; align-items: center; }
+  .hours-input {
+    width: 70px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 7px; padding: 7px 10px; color: #f0f0f0; font-size: 14px; font-weight: 700;
+    text-align: center; outline: none; font-family: monospace;
+  }
+  .hours-label { font-size: 12px; color: rgba(255,255,255,0.3); }
+  .btn-stream {
+    flex: 1; padding: 10px;
+    border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer;
+    border: 1px solid rgba(74,222,170,0.4); background: rgba(74,222,170,0.1); color: #4adeaa;
+    transition: transform 0.1s;
+  }
+  .btn-stream:active { transform: scale(0.97); }
+  .btn-stream.live { background: rgba(255,85,85,0.1); border-color: rgba(255,85,85,0.4); color: #ff6b6b; }
+
+  .controls-row { display: flex; gap: 8px; }
+  .btn-ctrl {
+    flex: 1; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.6);
+    transition: transform 0.1s;
+  }
+  .btn-ctrl:active { transform: scale(0.97); }
+  .btn-ctrl.pause { color: #f9a825; border-color: rgba(249,168,37,0.3); background: rgba(249,168,37,0.08); }
+  .btn-ctrl.muted { color: #ff6b6b; border-color: rgba(255,85,85,0.3); background: rgba(255,85,85,0.08); }
+
+  .time-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
   .btn-time {
-    padding: 16px 8px; border-radius: 12px; font-size: 16px; font-weight: 700;
+    padding: 12px 6px; border-radius: 10px; font-size: 15px; font-weight: 700;
     cursor: pointer; border: none; transition: transform 0.1s;
     -webkit-tap-highlight-color: transparent;
   }
   .btn-time:active { transform: scale(0.95); }
   .btn-add { background: rgba(74,222,170,0.12); color: #4adeaa; border: 1px solid rgba(74,222,170,0.25); }
-  .btn-add:hover { background: rgba(74,222,170,0.2); }
   .btn-sub { background: rgba(255,85,85,0.1); color: #ff6b6b; border: 1px solid rgba(255,85,85,0.2); }
-  .btn-sub:hover { background: rgba(255,85,85,0.18); }
 
-  .custom-card {
-    width: 100%; max-width: 420px;
-    background: #161820; border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 12px; padding: 1rem;
-    display: flex; flex-direction: column; gap: 8px;
-  }
-  .custom-card label { font-size: 11px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.08em; }
-  .custom-row { display: flex; gap: 8px; }
+  .custom-row { display: flex; gap: 6px; }
   .custom-input {
     flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px; padding: 10px 12px; color: #f0f0f0; font-size: 16px;
-    font-weight: 600; outline: none; text-align: center;
+    border-radius: 8px; padding: 8px 10px; color: #f0f0f0; font-size: 16px;
+    font-weight: 700; text-align: center; outline: none; font-family: monospace;
   }
-  .custom-input:focus { border-color: rgba(74,222,170,0.4); }
-  .custom-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .btn-custom-add {
-    padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 700;
-    cursor: pointer; border: 1px solid rgba(74,222,170,0.25);
-    background: rgba(74,222,170,0.12); color: #4adeaa; transition: transform 0.1s;
+  .btn-custom {
+    padding: 8px 14px; border-radius: 8px; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: transform 0.1s;
   }
-  .btn-custom-add:active { transform: scale(0.96); }
-  .btn-custom-sub {
-    padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 700;
-    cursor: pointer; border: 1px solid rgba(255,85,85,0.2);
-    background: rgba(255,85,85,0.1); color: #ff6b6b; transition: transform 0.1s;
-  }
-  .btn-custom-sub:active { transform: scale(0.96); }
+  .btn-custom:active { transform: scale(0.96); }
+  .btn-cadd { background: rgba(74,222,170,0.12); color: #4adeaa; border: 1px solid rgba(74,222,170,0.25); }
+  .btn-csub { background: rgba(255,85,85,0.1); color: #ff6b6b; border: 1px solid rgba(255,85,85,0.2); }
 
-  .divider { width: 100%; max-width: 420px; height: 1px; background: rgba(255,255,255,0.06); }
-
-  .log-wrap {
-    width: 100%; max-width: 420px;
-    background: #161820; border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 12px; padding: 1rem;
-  }
-  .log-title { font-size: 11px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
-  .log-list { max-height: 160px; overflow-y: auto; }
-  .log-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
-  .log-item:last-child { border-bottom: none; }
-  .log-name { color: rgba(255,255,255,0.45); }
-  .log-added { font-weight: 600; }
-  .log-added.pos { color: #4adeaa; }
-  .log-added.neg { color: #ff6b6b; }
-  .log-time { color: rgba(255,255,255,0.2); font-size: 11px; }
-  .log-empty { font-size: 13px; color: rgba(255,255,255,0.2); text-align: center; padding: 1rem 0; }
-
-
-  .init-card {
-    width: 100%; max-width: 420px;
-    background: #161820; border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 12px; padding: 1rem;
-    display: flex; flex-direction: column; gap: 8px;
-  }
-  .init-card label { font-size: 11px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.08em; }
-  .init-row { display: flex; gap: 8px; align-items: center; }
-  .init-input {
-    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px; padding: 10px 12px; color: #f0f0f0; font-size: 20px;
-    font-weight: 700; outline: none; text-align: center; font-family: monospace;
-  }
-  .init-input:focus { border-color: rgba(74,222,170,0.4); }
-  .btn-init {
-    padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 600;
-    cursor: pointer; border: 1px solid rgba(74,222,170,0.3);
-    background: rgba(74,222,170,0.12); color: #4adeaa; white-space: nowrap;
-    transition: transform 0.1s;
-  }
-  .btn-init:active { transform: scale(0.96); }
-  .btn-stream {
-    width: 100%; max-width: 420px;
-    padding: 16px;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    border: 1px solid rgba(74,222,170,0.4);
-    background: rgba(74,222,170,0.15);
-    color: #4adeaa;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    transition: transform 0.1s, background 0.2s;
-  }
-  .btn-stream:active { transform: scale(0.97); }
-  .btn-stream.live { background: rgba(255,85,85,0.15); border-color: rgba(255,85,85,0.4); color: #ff6b6b; }
-  .extras-row {
-    width: 100%; max-width: 420px;
-    display: flex; gap: 8px;
-  }
-  .btn-mute {
-    flex: 1; padding: 12px;
-    border-radius: 12px; font-size: 14px; font-weight: 600;
-    cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.6);
-    transition: background 0.15s, transform 0.1s;
-  }
-  .btn-mute:active { transform: scale(0.97); }
-  .btn-mute.muted { background: rgba(255,85,85,0.1); color: #ff6b6b; border-color: rgba(255,85,85,0.25); }
-  .top5-card {
-    width: 100%; max-width: 420px;
-    background: #161820; border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 12px; padding: 1rem;
-  }
-  .top5-title { font-size: 11px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
-  .top5-list { display: flex; flex-direction: column; gap: 6px; }
+  /* Top5 */
+  .top5-list { display: flex; flex-direction: column; gap: 4px; }
   .top5-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 10px; border-radius: 8px;
-    background: rgba(255,255,255,0.03);
-    font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 8px; border-radius: 7px;
+    background: rgba(255,255,255,0.03); font-size: 12px;
   }
-  .top5-rank { font-size: 16px; width: 24px; text-align: center; }
-  .top5-name { flex: 1; color: var(--text, #f0f0f0); font-weight: 500; }
-  .top5-mins { color: #4adeaa; font-weight: 700; font-size: 14px; }
-  .top5-empty { font-size: 13px; color: rgba(255,255,255,0.2); text-align: center; padding: 1rem 0; }
+  .top5-rank { font-size: 14px; width: 20px; text-align: center; }
+  .top5-name { flex: 1; color: #f0f0f0; font-weight: 500; }
+  .top5-mins { color: #4adeaa; font-weight: 700; font-size: 13px; }
+  .top5-empty { font-size: 12px; color: rgba(255,255,255,0.2); text-align: center; padding: 8px 0; }
+
+  .log-list { max-height: 100px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
+  .log-item { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .log-item:last-child { border-bottom: none; }
+  .log-name { color: rgba(255,255,255,0.4); }
+  .log-added.pos { color: #4adeaa; font-weight: 600; }
+  .log-added.neg { color: #ff6b6b; font-weight: 600; }
+  .log-time { color: rgba(255,255,255,0.2); }
+
   .toast {
-    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px);
+    position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%) translateY(60px);
     background: #1e2030; border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 20px; padding: 8px 20px; font-size: 13px; color: #f0f0f0;
-    transition: transform 0.3s ease; pointer-events: none; white-space: nowrap; z-index: 999;
+    border-radius: 16px; padding: 6px 16px; font-size: 12px; color: #f0f0f0;
+    transition: transform 0.3s; pointer-events: none; white-space: nowrap; z-index: 999;
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
 </style>
@@ -206,18 +146,17 @@
 
 <header>
   <h1>Panel Stream</h1>
-  <div class="conn-badge">
-    <div class="dot" id="dot"></div>
-    <span id="conn-label">sin conectar</span>
-  </div>
+  <div class="conn-badge"><div class="dot" id="dot"></div><span id="conn-label">sin conectar</span></div>
 </header>
 
 <div class="setup">
-  <label>Servidor WebSocket</label>
-  <input type="text" id="ws-url" placeholder="wss://tu-servidor.railway.app" />
-  <label>Clave secreta</label>
-  <input type="password" id="ws-secret" placeholder="tu clave secreta" />
-  <button class="btn-connect" onclick="connectWS()">Conectar</button>
+  <div class="setup-row">
+    <input type="text" id="ws-url" placeholder="wss://servidor.railway.app" />
+  </div>
+  <div class="setup-row">
+    <input type="password" id="ws-secret" placeholder="clave secreta" />
+    <button class="btn-connect" onclick="connectWS()">Conectar</button>
+  </div>
 </div>
 
 <div class="timer-display">
@@ -225,145 +164,75 @@
   <div class="timer-value" id="timer-val">--:--:--</div>
 </div>
 
-<div class="playback" id="playback-wrap" style="display:none;">
-  <button class="btn-play btn-pause" id="btn-pause" onclick="sendPlayback('toggle')">⏸ Pausar</button>
-</div>
-
-
-<div class="init-card">
-  <label>horas iniciales del contador</label>
-  <div class="init-row">
-    <input class="init-input" type="number" id="init-hours" value="4" min="0" max="24" step="0.5" />
-
+<div class="card">
+  <div class="card-label">stream</div>
+  <div class="stream-row">
+    <input class="hours-input" type="number" id="init-hours" value="4" min="0" max="24" step="0.5" />
+    <span class="hours-label">horas iniciales</span>
+    <button class="btn-stream" id="btn-stream" onclick="toggleStream()">▶ Iniciar Stream</button>
+  </div>
+  <div class="controls-row" id="playback-wrap" style="display:none;">
+    <button class="btn-ctrl pause" id="btn-pause" onclick="sendPlayback('toggle')">⏸ Pausar</button>
+    <button class="btn-ctrl muted" id="btn-mute" onclick="toggleMute()">🔊 Sonido</button>
   </div>
 </div>
 
-<button class="btn-stream" id="btn-stream" onclick="toggleStream()">▶ Iniciar Stream</button>
-
-<div class="extras-row">
-  <button class="btn-mute" id="btn-mute" onclick="toggleMute()">🔊 Sonido activado</button>
-</div>
-
-<div class="top5-card">
-  <div class="top5-title">🏆 top 5 contribuidores</div>
-  <div class="top5-list" id="top5-list">
-    <div class="top5-empty">Sin datos todavía</div>
+<div class="card">
+  <div class="card-label">tiempo rápido</div>
+  <div class="time-grid">
+    <button class="btn-time btn-add" onclick="sendTime(60)">+60</button>
+    <button class="btn-time btn-add" onclick="sendTime(30)">+30</button>
+    <button class="btn-time btn-add" onclick="sendTime(15)">+15</button>
+    <button class="btn-time btn-sub" onclick="sendTime(-60)">−60</button>
+    <button class="btn-time btn-sub" onclick="sendTime(-30)">−30</button>
+    <button class="btn-time btn-sub" onclick="sendTime(-15)">−15</button>
   </div>
-</div>
-
-<div class="time-btns">
-  <div class="time-row">
-    <button class="btn-time btn-add" onclick="sendTime(60)">+60 min</button>
-    <button class="btn-time btn-add" onclick="sendTime(30)">+30 min</button>
-    <button class="btn-time btn-add" onclick="sendTime(15)">+15 min</button>
-  </div>
-  <div class="time-row">
-    <button class="btn-time btn-sub" onclick="sendTime(-60)">−60 min</button>
-    <button class="btn-time btn-sub" onclick="sendTime(-30)">−30 min</button>
-    <button class="btn-time btn-sub" onclick="sendTime(-15)">−15 min</button>
-  </div>
-</div>
-
-<div class="custom-card">
-  <label>tiempo personalizado (minutos)</label>
   <div class="custom-row">
-    <input class="custom-input" type="number" id="custom-mins" placeholder="0" min="0" step="1" />
-  </div>
-  <div class="custom-btns">
-    <button class="btn-custom-add" onclick="sendCustom(1)">+ Añadir</button>
-    <button class="btn-custom-sub" onclick="sendCustom(-1)">− Quitar</button>
+    <input class="custom-input" type="number" id="custom-mins" placeholder="min" min="0" step="1" />
+    <button class="btn-custom btn-cadd" onclick="sendCustom(1)">+</button>
+    <button class="btn-custom btn-csub" onclick="sendCustom(-1)">−</button>
   </div>
 </div>
 
-<div class="divider"></div>
+<div class="card">
+  <div class="card-label">🏆 top 5</div>
+  <div class="top5-list" id="top5-list"><div class="top5-empty">Sin datos</div></div>
+</div>
 
-<div class="log-wrap">
-  <div class="log-title">historial de sesión</div>
-  <div class="log-list" id="log-list">
-    <div class="log-empty">Sin eventos todavía</div>
-  </div>
+<div class="card">
+  <div class="card-label">historial</div>
+  <div class="log-list" id="log-list"><div class="top5-empty">Sin eventos</div></div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-let ws = null, secret = '', logs = [], paused = false;
-
-let muted = false;
 const medals = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣'];
-
-function toggleMute() {
-  muted = !muted;
-  const btn = document.getElementById('btn-mute');
-  btn.textContent = muted ? '🔇 Sonido silenciado' : '🔊 Sonido activado';
-  btn.className = 'btn-mute' + (muted ? ' muted' : '');
-  if (!send({ type: 'mute', amount: muted ? 1 : 0 })) return;
-  showToast(muted ? '🔇 Sonido silenciado' : '🔊 Sonido activado');
-}
-
-function updateTop5(data) {
-  const list = document.getElementById('top5-list');
-  if (!data || data.length === 0) {
-    list.innerHTML = '<div class="top5-empty">Sin datos todavía</div>';
-    return;
-  }
-  list.innerHTML = data.slice(0, 5).map(([user, secs], i) => {
-    const m = Math.floor(secs / 60);
-    return '<div class="top5-item">' +
-      '<span class="top5-rank">' + medals[i] + '</span>' +
-      '<span class="top5-name">' + user + '</span>' +
-      '<span class="top5-mins">' + m + ' min</span>' +
-    '</div>';
-  }).join('');
-}
-
-
+let ws = null, secret = '', logs = [];
+let paused = false;
+let muted = localStorage.getItem('muted') === 'true';
 let streamLive = localStorage.getItem('streamLive') === 'true';
-
-function toggleStream() {
-  if (!streamLive) {
-    // Aplicar horas iniciales al iniciar stream
-    const hours = parseFloat(document.getElementById('init-hours').value) || 4;
-    const mins = hours * 60;
-    send({ type: 'set_time', amount: mins });
-    send({ type: 'start_stream' });
-    streamLive = true;
-    localStorage.setItem('streamLive', 'true');
-    const btn = document.getElementById('btn-stream');
-    btn.textContent = '⏹ Terminar Stream';
-    btn.classList.add('live');
-    document.getElementById('playback-wrap').style.display = 'grid';
-    addLog('Stream iniciado', mins, hours + 'h');
-    showToast('▶ Stream iniciado con ' + hours + 'h');
-  } else {
-    streamLive = false;
-    localStorage.setItem('streamLive', 'false');
-    const btn = document.getElementById('btn-stream');
-    btn.textContent = '▶ Iniciar Stream';
-    btn.classList.remove('live');
-    document.getElementById('playback-wrap').style.display = 'none';
-    addLog('Stream terminado', 0, '⏹ off');
-    showToast('⏹ Stream terminado');
-  }
-}
-
 
 function connectWS() {
   const url = document.getElementById('ws-url').value.trim();
   secret = document.getElementById('ws-secret').value.trim();
-  if (!url) return showToast('Introduce la URL del servidor');
+  if (!url) return showToast('Introduce la URL');
   localStorage.setItem('ws_url', url);
   localStorage.setItem('ws_secret', secret);
   if (ws) ws.close();
   setStatus('connecting');
   ws = new WebSocket(url);
-  ws.addEventListener('open', () => { setStatus('on'); showToast('Conectado ✓'); ws.send(JSON.stringify({ role: 'panel' })); });
+  ws.addEventListener('open', () => {
+    setStatus('on');
+    ws.send(JSON.stringify({ role: 'panel' }));
+    showToast('Conectado ✓');
+  });
   ws.addEventListener('message', (e) => {
     try {
       const msg = JSON.parse(e.data);
       if (msg.remaining !== undefined) syncTimer(msg.remaining, msg.paused);
       if (msg.top5 !== undefined) updateTop5(msg.top5);
-      if (msg.paused !== undefined) updatePauseBtn(msg.paused);
+      if (msg.eventLog) addLog(msg.eventLog.name, msg.eventLog.mins, msg.eventLog.label);
     } catch {}
   });
   ws.addEventListener('close', () => { setStatus('off'); showToast('Desconectado'); });
@@ -376,10 +245,68 @@ function send(payload) {
   return true;
 }
 
+function syncTimer(secs, isPaused) {
+  const el = document.getElementById('timer-val');
+  const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
+  el.textContent = [h,m,s].map(n=>String(Math.floor(n)).padStart(2,'0')).join(':');
+  el.className = 'timer-value' + (secs <= 60 && secs > 0 ? ' low' : '');
+  if (isPaused !== undefined) {
+    paused = isPaused;
+    updatePauseBtn(isPaused);
+  }
+}
+
+function updatePauseBtn(isPaused) {
+  const btn = document.getElementById('btn-pause');
+  btn.textContent = isPaused ? '▶ Reanudar' : '⏸ Pausar';
+}
+
+function toggleStream() {
+  if (!streamLive) {
+    const hours = parseFloat(document.getElementById('init-hours').value) || 4;
+    const mins = hours * 60;
+    send({ type: 'set_time', amount: mins });
+    send({ type: 'start_stream' });
+    streamLive = true;
+    localStorage.setItem('streamLive', 'true');
+    document.getElementById('btn-stream').textContent = '⏹ Terminar Stream';
+    document.getElementById('btn-stream').classList.add('live');
+    document.getElementById('playback-wrap').style.display = 'flex';
+    addLog('Stream iniciado', mins, hours + 'h');
+    showToast('▶ Stream iniciado con ' + hours + 'h');
+  } else {
+    streamLive = false;
+    localStorage.setItem('streamLive', 'false');
+    document.getElementById('btn-stream').textContent = '▶ Iniciar Stream';
+    document.getElementById('btn-stream').classList.remove('live');
+    document.getElementById('playback-wrap').style.display = 'none';
+    addLog('Stream terminado', 0, '⏹');
+    showToast('⏹ Stream terminado');
+  }
+}
+
+function sendPlayback(action) {
+  if (!send({ type: action })) return;
+}
+
+function toggleMute() {
+  muted = !muted;
+  localStorage.setItem('muted', muted);
+  send({ type: 'mute', amount: muted ? 1 : 0 });
+  updateMuteBtn();
+  showToast(muted ? '🔇 Silenciado' : '🔊 Sonido activado');
+}
+
+function updateMuteBtn() {
+  const btn = document.getElementById('btn-mute');
+  btn.textContent = muted ? '🔇 Silenciado' : '🔊 Sonido';
+  btn.className = 'btn-ctrl' + (muted ? ' muted' : '');
+}
+
 function sendTime(mins) {
   if (!send({ type: 'custom', amount: mins })) return;
-  addLog('Tiempo manual', mins, (mins > 0 ? '+' : '') + mins + ' min');
-  showToast(mins > 0 ? '✓ +' + mins + ' min' : '✓ ' + mins + ' min');
+  addLog('Manual', mins * 60, (mins > 0 ? '+' : '') + mins + ' min');
+  showToast((mins > 0 ? '+' : '') + mins + ' min');
 }
 
 function sendCustom(sign) {
@@ -387,83 +314,55 @@ function sendCustom(sign) {
   if (val <= 0) { showToast('Introduce los minutos'); return; }
   const mins = sign * val;
   if (!send({ type: 'custom', amount: mins })) return;
-  addLog('Tiempo personalizado', mins, (mins > 0 ? '+' : '') + mins + ' min');
-  showToast(mins > 0 ? '✓ +' + mins + ' min' : '✓ ' + mins + ' min');
+  addLog('Personalizado', mins * 60, (mins > 0 ? '+' : '') + mins + ' min');
+  showToast((mins > 0 ? '+' : '') + mins + ' min');
   document.getElementById('custom-mins').value = '';
 }
 
-function sendPlayback(action) {
-  if (!send({ type: action })) return;
-  if (action === 'reset') {
-    showToast('↺ Reiniciado');
-    paused = false;
-    updatePauseBtn(false);
-  }
-  // Para toggle no cambiamos estado local — esperamos confirmación del servidor
+function updateTop5(data) {
+  const list = document.getElementById('top5-list');
+  if (!data || !data.length) { list.innerHTML = '<div class="top5-empty">Sin datos</div>'; return; }
+  list.innerHTML = data.slice(0,5).map(([u,s],i) =>
+    `<div class="top5-item"><span class="top5-rank">${medals[i]}</span><span class="top5-name">${u}</span><span class="top5-mins">${Math.floor(s/60)} min</span></div>`
+  ).join('');
 }
 
-function updatePauseBtn(isPaused) {
-  paused = isPaused;
-  document.getElementById('btn-pause').textContent = isPaused ? '▶ Reanudar' : '⏸ Pausar';
-}
-
-function syncTimer(secs, isPaused) {
-  renderTimer(secs);
-  if (isPaused !== undefined) {
-    paused = isPaused;
-    updatePauseBtn(isPaused);
-  }
-}
-
-function renderTimer(secs) {
-  const el = document.getElementById('timer-val');
-  const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
-  el.textContent = [h,m,s].map(n=>String(Math.floor(n)).padStart(2,'0')).join(':');
-  el.className = 'timer-value' + (secs <= 60 && secs > 0 ? ' low' : '');
-}
-
-function addLog(name, mins, label) {
+function addLog(name, secs, label) {
   const now = new Date();
-  const t = [now.getHours(), now.getMinutes(), now.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
-  logs.unshift({ name, mins, label, t });
-  if (logs.length > 50) logs.pop();
+  const t = [now.getHours(),now.getMinutes(),now.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+  logs.unshift({ name, secs, label, t });
+  if (logs.length > 30) logs.pop();
   document.getElementById('log-list').innerHTML = logs.map(l =>
-    `<div class="log-item">
-      <span class="log-name">${l.name}</span>
-      <span class="log-added ${l.mins >= 0 ? 'pos' : 'neg'}">${l.label}</span>
-      <span class="log-time">${l.t}</span>
-    </div>`
+    `<div class="log-item"><span class="log-name">${l.name}</span><span class="log-added ${l.secs>=0?'pos':'neg'}">${l.label}</span><span class="log-time">${l.t}</span></div>`
   ).join('');
 }
 
 function setStatus(state) {
-  document.getElementById('dot').className = 'dot ' + (state === 'on' ? 'on' : state === 'err' ? 'err' : '');
-  document.getElementById('conn-label').textContent = state === 'on' ? 'conectado' : state === 'connecting' ? 'conectando…' : state === 'err' ? 'error' : 'sin conectar';
+  document.getElementById('dot').className = 'dot ' + (state==='on'?'on':state==='err'?'err':'');
+  document.getElementById('conn-label').textContent = state==='on'?'conectado':state==='connecting'?'conectando…':state==='err'?'error':'sin conectar';
 }
 
 let toastTimer;
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-
-
 window.addEventListener('DOMContentLoaded', () => {
-  // Restaurar estado del botón de stream
+  const url = localStorage.getItem('ws_url');
+  const sec = localStorage.getItem('ws_secret');
+  if (url) document.getElementById('ws-url').value = url;
+  if (sec) document.getElementById('ws-secret').value = sec;
+
   if (streamLive) {
-    const btn = document.getElementById('btn-stream');
-    btn.textContent = '⏹ Terminar Stream';
-    btn.classList.add('live');
-    document.getElementById('playback-wrap').style.display = 'grid';
+    document.getElementById('btn-stream').textContent = '⏹ Terminar Stream';
+    document.getElementById('btn-stream').classList.add('live');
+    document.getElementById('playback-wrap').style.display = 'flex';
   }
-  const savedUrl = localStorage.getItem('ws_url');
-  const savedSecret = localStorage.getItem('ws_secret');
-  if (savedUrl) document.getElementById('ws-url').value = savedUrl;
-  if (savedSecret) document.getElementById('ws-secret').value = savedSecret;
+
+  updateMuteBtn();
 
   document.getElementById('custom-mins').addEventListener('keydown', e => {
     if (e.key === 'Enter') sendCustom(1);
