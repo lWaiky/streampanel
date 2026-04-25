@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Extensible — onlyflan_es</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #080510;
+  color: #fff;
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Fondo con partículas */
+canvas#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+.content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  width: 100%;
+  max-width: 900px;
+  padding: 2rem;
+}
+
+/* Nombre */
+.streamer-name {
+  font-size: 18px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(192, 132, 252, 0.6);
+}
+
+/* Título */
+.title {
+  font-size: clamp(36px, 6vw, 64px);
+  font-weight: 700;
+  letter-spacing: -1px;
+  text-align: center;
+  line-height: 1.1;
+  color: #fff;
+}
+
+.title span {
+  color: #c084fc;
+  text-shadow: 0 0 40px rgba(192, 132, 252, 0.4);
+}
+
+/* Contador */
+.counter-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.counter-label {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(192, 132, 252, 0.5);
+}
+
+.counter {
+  font-size: clamp(72px, 14vw, 140px);
+  font-weight: 700;
+  letter-spacing: -4px;
+  font-variant-numeric: tabular-nums;
+  font-family: 'Rajdhani', monospace;
+  color: #fff;
+  text-shadow: 0 0 60px rgba(192, 132, 252, 0.3);
+  line-height: 1;
+}
+
+.counter.low { color: #f87171; text-shadow: 0 0 40px rgba(248, 113, 113, 0.4); }
+
+/* Barra */
+.bar-wrap {
+  width: min(500px, 80vw);
+  height: 4px;
+  background: rgba(192, 132, 252, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed, #c084fc);
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+/* Info */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+.info-card {
+  background: rgba(192, 132, 252, 0.06);
+  border: 1px solid rgba(192, 132, 252, 0.15);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-card-icon { font-size: 20px; }
+.info-card-title { font-size: 14px; font-weight: 700; color: #c084fc; letter-spacing: 0.05em; }
+.info-card-desc { font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.4; }
+
+/* Comandos */
+.commands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.cmd {
+  background: rgba(192, 132, 252, 0.08);
+  border: 1px solid rgba(192, 132, 252, 0.2);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #c084fc;
+  letter-spacing: 0.05em;
+}
+
+.cmd span {
+  font-weight: 400;
+  color: rgba(255,255,255,0.35);
+  margin-left: 6px;
+}
+
+/* Inicio */
+.start-time {
+  font-size: 15px;
+  color: rgba(255,255,255,0.3);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.start-time strong {
+  color: #c084fc;
+  font-weight: 700;
+}
+
+/* Separador decorativo */
+.divider {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #c084fc, transparent);
+}
+
+/* Animación borde */
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<div class="content">
+  <div class="streamer-name">onlyflan_es</div>
+
+  <div class="title">El stream es <span>extensible</span></div>
+
+  <div class="counter-wrap">
+    <div class="counter-label">tiempo acumulado</div>
+    <div class="counter" id="counter">00:00:00</div>
+    <div class="bar-wrap"><div class="bar-fill" id="bar" style="width:0%"></div></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="info-card-icon">👤</div>
+      <div class="info-card-title">Seguidor</div>
+      <div class="info-card-desc">Seguir el canal suma <strong style="color:#c084fc">10 min</strong> al contador.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon">⭐</div>
+      <div class="info-card-title">Suscripción</div>
+      <div class="info-card-desc">Suscribirte suma <strong style="color:#c084fc">60 min</strong> al contador. Los gift subs se multiplican.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon">⚔️</div>
+      <div class="info-card-title">Raid</div>
+      <div class="info-card-desc">Cada viewer del raid suma <strong style="color:#c084fc">3 min</strong>. Mínimo 3 personas.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon">💎</div>
+      <div class="info-card-title">Bits</div>
+      <div class="info-card-desc">Cada 100 bits suman <strong style="color:#c084fc">30 min</strong> al contador.</div>
+    </div>
+  </div>
+
+  <div class="commands">
+    <div class="cmd">!extensible <span>tiempo restante + transcurrido</span></div>
+    <div class="cmd">!top <span>top 5 contribuidores</span></div>
+    <div class="cmd">!mitiempo <span>tu tiempo sumado</span></div>
+    <div class="cmd">!record <span>quien más ha sumado</span></div>
+    <div class="cmd">!tts mensaje <span>texto a voz (subs y mods)</span></div>
+  </div>
+
+  <div class="start-time">
+    El directo empieza <strong>mañana a las 16:00h</strong> (hora española)<br>
+    ¡Pero ya puedes colaborar y sumar tiempo!
+  </div>
+</div>
+
+<script>
+// ── Contador ─────────────────────────────────────────────────
+const WS_URL = 'wss://stream-counter-server-production.up.railway.app';
+let remaining = 0;
+let maxTime = 0;
+let socket = null;
+
+function pad(n) { return String(Math.floor(Math.abs(n))).padStart(2,'0'); }
+function fmt(s) {
+  return pad(s/3600) + ':' + pad((s%3600)/60) + ':' + pad(s%60);
+}
+
+function updateCounter() {
+  const el = document.getElementById('counter');
+  const bar = document.getElementById('bar');
+  el.textContent = fmt(remaining);
+  el.className = 'counter' + (remaining <= 60 && remaining > 0 ? ' low' : '');
+  if (maxTime > 0) {
+    bar.style.width = Math.min(100, (remaining / maxTime) * 100) + '%';
+  }
+}
+
+setInterval(() => {
+  if (remaining > 0) { remaining--; updateCounter(); }
+}, 1000);
+
+function connectWS() {
+  try { socket = new WebSocket(WS_URL); } catch(e) { setTimeout(connectWS, 5000); return; }
+  socket.addEventListener('open', () => {
+    socket.send(JSON.stringify({ role: 'panel' }));
+  });
+  socket.addEventListener('message', (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.remaining !== undefined) {
+        remaining = msg.remaining;
+        if (remaining > maxTime) maxTime = remaining;
+        updateCounter();
+      }
+    } catch {}
+  });
+  socket.addEventListener('close', () => { socket = null; setTimeout(connectWS, 5000); });
+}
+connectWS();
+
+// ── Partículas de fondo ───────────────────────────────────────
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let particles = [];
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+for (let i = 0; i < 60; i++) {
+  particles.push({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    r: Math.random() * 2 + 0.5,
+    vx: (Math.random() - 0.5) * 0.3,
+    vy: (Math.random() - 0.5) * 0.3,
+    o: Math.random() * 0.4 + 0.1,
+  });
+}
+
+function drawParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (const p of particles) {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(192,132,252,${p.o})`;
+    ctx.fill();
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = canvas.width;
+    if (p.x > canvas.width) p.x = 0;
+    if (p.y < 0) p.y = canvas.height;
+    if (p.y > canvas.height) p.y = 0;
+  }
+  requestAnimationFrame(drawParticles);
+}
+drawParticles();
+</script>
+
+</body>
+</html>
