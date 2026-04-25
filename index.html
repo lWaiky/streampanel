@@ -11,16 +11,12 @@
     color: #f0f0f0;
     font-family: 'Segoe UI', system-ui, sans-serif;
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     padding: 1rem;
-    gap: 8px;
   }
 
   header {
-    width: 100%; max-width: 460px;
     display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1rem;
   }
   h1 { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.4); letter-spacing: 0.1em; text-transform: uppercase; }
   .conn-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; color: rgba(255,255,255,0.3); }
@@ -28,12 +24,15 @@
   .dot.on { background: #4adeaa; box-shadow: 0 0 5px #4adeaa; }
   .dot.err { background: #ff5555; }
 
+  /* Setup oculto hasta conectar */
   .setup {
-    width: 100%; max-width: 460px;
     background: #161820; border: 1px solid rgba(255,255,255,0.07);
     border-radius: 10px; padding: 10px;
     display: flex; flex-direction: column; gap: 6px;
+    margin-bottom: 1rem;
+    transition: all 0.3s;
   }
+  .setup.hidden { display: none; }
   .setup-row { display: flex; gap: 6px; }
   .setup input {
     flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
@@ -42,42 +41,46 @@
   .setup input:focus { border-color: rgba(74,222,170,0.4); }
   .btn-connect {
     padding: 7px 14px; background: rgba(74,222,170,0.1); border: 1px solid rgba(74,222,170,0.3);
-    border-radius: 7px; color: #4adeaa; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+    border-radius: 7px; color: #4adeaa; font-size: 13px; font-weight: 600; cursor: pointer;
   }
 
-  .timer-display {
-    width: 100%; max-width: 460px;
-    background: #161820; border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 12px; padding: 12px; text-align: center;
+  /* Layout 2 columnas */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
   }
-  .timer-label { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; }
-  .timer-value { font-size: 52px; font-weight: 700; letter-spacing: -2px; font-family: monospace; color: #fff; font-variant-numeric: tabular-nums; }
-  .timer-value.low { color: #ff5555; }
+
+  .col { display: flex; flex-direction: column; gap: 8px; }
 
   .card {
-    width: 100%; max-width: 460px;
     background: #161820; border: 1px solid rgba(255,255,255,0.07);
     border-radius: 10px; padding: 10px;
     display: flex; flex-direction: column; gap: 8px;
   }
   .card-label { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.08em; }
 
-  .stream-row { display: flex; gap: 8px; align-items: center; }
-  .hours-input {
-    width: 70px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 7px; padding: 7px 10px; color: #f0f0f0; font-size: 14px; font-weight: 700;
-    text-align: center; outline: none; font-family: monospace;
+  /* Timer */
+  .timer-display {
+    background: #161820; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 12px; text-align: center;
   }
-  .hours-label { font-size: 12px; color: rgba(255,255,255,0.3); }
+  .timer-label { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; }
+  .timer-value { font-size: 48px; font-weight: 700; letter-spacing: -2px; font-family: monospace; color: #fff; font-variant-numeric: tabular-nums; }
+  .timer-value.low { color: #ff5555; }
+
+  /* Stream btn */
   .btn-stream {
-    flex: 1; padding: 10px;
-    border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer;
+    width: 100%; padding: 12px;
+    border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer;
     border: 1px solid rgba(74,222,170,0.4); background: rgba(74,222,170,0.1); color: #4adeaa;
     transition: transform 0.1s;
   }
   .btn-stream:active { transform: scale(0.97); }
-  .btn-stream.live { background: rgba(255,85,85,0.1); border-color: rgba(255,85,85,0.4); color: #ff6b6b; }
+  .btn-stream.live { background: rgba(255,85,85,0.15); border-color: rgba(255,85,85,0.5); color: #ff6b6b; }
 
+  /* Controls */
   .controls-row { display: flex; gap: 8px; }
   .btn-ctrl {
     flex: 1; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600;
@@ -89,11 +92,11 @@
   .btn-ctrl.pause { color: #f9a825; border-color: rgba(249,168,37,0.3); background: rgba(249,168,37,0.08); }
   .btn-ctrl.muted { color: #ff6b6b; border-color: rgba(255,85,85,0.3); background: rgba(255,85,85,0.08); }
 
+  /* Tiempo */
   .time-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
   .btn-time {
-    padding: 12px 6px; border-radius: 10px; font-size: 15px; font-weight: 700;
+    padding: 12px 4px; border-radius: 10px; font-size: 14px; font-weight: 700;
     cursor: pointer; border: none; transition: transform 0.1s;
-    -webkit-tap-highlight-color: transparent;
   }
   .btn-time:active { transform: scale(0.95); }
   .btn-add { background: rgba(74,222,170,0.12); color: #4adeaa; border: 1px solid rgba(74,222,170,0.25); }
@@ -106,7 +109,7 @@
     font-weight: 700; text-align: center; outline: none; font-family: monospace;
   }
   .btn-custom {
-    padding: 8px 14px; border-radius: 8px; font-size: 14px; font-weight: 700;
+    padding: 8px 14px; border-radius: 8px; font-size: 15px; font-weight: 700;
     cursor: pointer; transition: transform 0.1s;
   }
   .btn-custom:active { transform: scale(0.96); }
@@ -125,13 +128,14 @@
   .top5-mins { color: #4adeaa; font-weight: 700; font-size: 13px; }
   .top5-empty { font-size: 12px; color: rgba(255,255,255,0.2); text-align: center; padding: 8px 0; }
 
-  .log-list { max-height: 100px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
+  /* Log */
+  .log-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
   .log-item { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
   .log-item:last-child { border-bottom: none; }
-  .log-name { color: rgba(255,255,255,0.4); }
+  .log-name { color: rgba(255,255,255,0.4); flex: 1; }
   .log-added.pos { color: #4adeaa; font-weight: 600; }
   .log-added.neg { color: #ff6b6b; font-weight: 600; }
-  .log-time { color: rgba(255,255,255,0.2); }
+  .log-time { color: rgba(255,255,255,0.2); margin-left: 6px; }
 
   .toast {
     position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%) translateY(60px);
@@ -149,7 +153,7 @@
   <div class="conn-badge"><div class="dot" id="dot"></div><span id="conn-label">sin conectar</span></div>
 </header>
 
-<div class="setup">
+<div class="setup" id="setup-card">
   <div class="setup-row">
     <input type="text" id="ws-url" placeholder="wss://servidor.railway.app" />
   </div>
@@ -159,49 +163,60 @@
   </div>
 </div>
 
-<div class="timer-display">
-  <div class="timer-label">tiempo en stream</div>
-  <div class="timer-value" id="timer-val">--:--:--</div>
-</div>
+<div class="layout">
+  <!-- Columna izquierda -->
+  <div class="col">
+    <div class="card">
+      <div class="card-label">stream</div>
+      <div id="hours-wrap" style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <input type="number" id="init-hours" value="4" min="0" max="24" step="0.5"
+          style="width:60px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+          border-radius:7px;padding:6px 8px;color:#f0f0f0;font-size:15px;font-weight:700;
+          text-align:center;outline:none;font-family:monospace;" />
+        <span style="font-size:12px;color:rgba(255,255,255,0.3);">horas iniciales</span>
+      </div>
+      <button class="btn-stream" id="btn-stream" onclick="toggleStream()">▶ Iniciar Stream</button>
+      <div class="controls-row" id="playback-wrap" style="display:none;">
+        <button class="btn-ctrl pause" id="btn-pause" onclick="sendPlayback('toggle')">⏸ Pausar</button>
+        <button class="btn-ctrl" id="btn-mute" onclick="toggleMute()">🔊 Sonido</button>
+      </div>
+    </div>
 
-<div class="card">
-  <div class="card-label">stream</div>
-  <div class="stream-row">
-    <input class="hours-input" type="number" id="init-hours" value="4" min="0" max="24" step="0.5" />
-    <span class="hours-label">horas iniciales</span>
-    <button class="btn-stream" id="btn-stream" onclick="toggleStream()">▶ Iniciar Stream</button>
-  </div>
-  <div class="controls-row" id="playback-wrap" style="display:none;">
-    <button class="btn-ctrl pause" id="btn-pause" onclick="sendPlayback('toggle')">⏸ Pausar</button>
-    <button class="btn-ctrl muted" id="btn-mute" onclick="toggleMute()">🔊 Sonido</button>
-  </div>
-</div>
+    <div class="card">
+      <div class="card-label">tiempo rápido</div>
+      <div class="time-grid">
+        <button class="btn-time btn-add" onclick="sendTime(60)">+60</button>
+        <button class="btn-time btn-add" onclick="sendTime(30)">+30</button>
+        <button class="btn-time btn-add" onclick="sendTime(15)">+15</button>
+        <button class="btn-time btn-sub" onclick="sendTime(-60)">−60</button>
+        <button class="btn-time btn-sub" onclick="sendTime(-30)">−30</button>
+        <button class="btn-time btn-sub" onclick="sendTime(-15)">−15</button>
+      </div>
+      <div class="custom-row">
+        <input class="custom-input" type="number" id="custom-mins" placeholder="min" min="0" step="1" />
+        <button class="btn-custom btn-cadd" onclick="sendCustom(1)">+</button>
+        <button class="btn-custom btn-csub" onclick="sendCustom(-1)">−</button>
+      </div>
+    </div>
 
-<div class="card">
-  <div class="card-label">tiempo rápido</div>
-  <div class="time-grid">
-    <button class="btn-time btn-add" onclick="sendTime(60)">+60</button>
-    <button class="btn-time btn-add" onclick="sendTime(30)">+30</button>
-    <button class="btn-time btn-add" onclick="sendTime(15)">+15</button>
-    <button class="btn-time btn-sub" onclick="sendTime(-60)">−60</button>
-    <button class="btn-time btn-sub" onclick="sendTime(-30)">−30</button>
-    <button class="btn-time btn-sub" onclick="sendTime(-15)">−15</button>
+    <div class="card">
+      <div class="card-label">historial de sesión</div>
+      <div class="log-list" id="log-list"><div class="top5-empty">Sin eventos</div></div>
+    </div>
   </div>
-  <div class="custom-row">
-    <input class="custom-input" type="number" id="custom-mins" placeholder="min" min="0" step="1" />
-    <button class="btn-custom btn-cadd" onclick="sendCustom(1)">+</button>
-    <button class="btn-custom btn-csub" onclick="sendCustom(-1)">−</button>
+
+  <!-- Columna derecha -->
+  <div class="col">
+    <div class="timer-display">
+      <div class="timer-label">tiempo en stream</div>
+      <div class="timer-value" id="timer-val">--:--:--</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">🏆 top 5 contribuidores</div>
+      <div class="top5-list" id="top5-list"><div class="top5-empty">Sin datos</div></div>
+    </div>
   </div>
-</div>
-
-<div class="card">
-  <div class="card-label">🏆 top 5</div>
-  <div class="top5-list" id="top5-list"><div class="top5-empty">Sin datos</div></div>
-</div>
-
-<div class="card">
-  <div class="card-label">historial</div>
-  <div class="log-list" id="log-list"><div class="top5-empty">Sin eventos</div></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -212,6 +227,7 @@ let ws = null, secret = '', logs = [];
 let paused = false;
 let muted = localStorage.getItem('muted') === 'true';
 let streamLive = localStorage.getItem('streamLive') === 'true';
+let connected = false;
 
 function connectWS() {
   const url = document.getElementById('ws-url').value.trim();
@@ -224,7 +240,10 @@ function connectWS() {
   ws = new WebSocket(url);
   ws.addEventListener('open', () => {
     setStatus('on');
+    connected = true;
     ws.send(JSON.stringify({ role: 'panel' }));
+    // Ocultar setup al conectar
+    document.getElementById('setup-card').classList.add('hidden');
     showToast('Conectado ✓');
   });
   ws.addEventListener('message', (e) => {
@@ -235,7 +254,12 @@ function connectWS() {
       if (msg.eventLog) addLog(msg.eventLog.name, msg.eventLog.mins, msg.eventLog.label);
     } catch {}
   });
-  ws.addEventListener('close', () => { setStatus('off'); showToast('Desconectado'); });
+  ws.addEventListener('close', () => {
+    setStatus('off');
+    connected = false;
+    document.getElementById('setup-card').classList.remove('hidden');
+    showToast('Desconectado');
+  });
   ws.addEventListener('error', () => setStatus('err'));
 }
 
@@ -250,15 +274,12 @@ function syncTimer(secs, isPaused) {
   const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
   el.textContent = [h,m,s].map(n=>String(Math.floor(n)).padStart(2,'0')).join(':');
   el.className = 'timer-value' + (secs <= 60 && secs > 0 ? ' low' : '');
-  if (isPaused !== undefined) {
-    paused = isPaused;
-    updatePauseBtn(isPaused);
-  }
+  if (isPaused !== undefined) { paused = isPaused; updatePauseBtn(isPaused); }
 }
 
 function updatePauseBtn(isPaused) {
   const btn = document.getElementById('btn-pause');
-  btn.textContent = isPaused ? '▶ Reanudar' : '⏸ Pausar';
+  if (btn) btn.textContent = isPaused ? '▶ Reanudar' : '⏸ Pausar';
 }
 
 function toggleStream() {
@@ -272,22 +293,22 @@ function toggleStream() {
     document.getElementById('btn-stream').textContent = '⏹ Terminar Stream';
     document.getElementById('btn-stream').classList.add('live');
     document.getElementById('playback-wrap').style.display = 'flex';
-    addLog('Stream iniciado', mins, hours + 'h');
-    showToast('▶ Stream iniciado con ' + hours + 'h');
+    document.getElementById('hours-wrap').style.display = 'none';
+    addLog('Stream iniciado', mins * 60, '▶ ' + hours + 'h');
+    showToast('▶ Stream iniciado');
   } else {
     streamLive = false;
     localStorage.setItem('streamLive', 'false');
     document.getElementById('btn-stream').textContent = '▶ Iniciar Stream';
     document.getElementById('btn-stream').classList.remove('live');
     document.getElementById('playback-wrap').style.display = 'none';
+    document.getElementById('hours-wrap').style.display = 'flex';
     addLog('Stream terminado', 0, '⏹');
     showToast('⏹ Stream terminado');
   }
 }
 
-function sendPlayback(action) {
-  if (!send({ type: action })) return;
-}
+function sendPlayback(action) { send({ type: action }); }
 
 function toggleMute() {
   muted = !muted;
@@ -331,7 +352,7 @@ function addLog(name, secs, label) {
   const now = new Date();
   const t = [now.getHours(),now.getMinutes(),now.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
   logs.unshift({ name, secs, label, t });
-  if (logs.length > 30) logs.pop();
+  if (logs.length > 100) logs.pop();
   document.getElementById('log-list').innerHTML = logs.map(l =>
     `<div class="log-item"><span class="log-name">${l.name}</span><span class="log-added ${l.secs>=0?'pos':'neg'}">${l.label}</span><span class="log-time">${l.t}</span></div>`
   ).join('');
@@ -355,18 +376,18 @@ window.addEventListener('DOMContentLoaded', () => {
   const sec = localStorage.getItem('ws_secret');
   if (url) document.getElementById('ws-url').value = url;
   if (sec) document.getElementById('ws-secret').value = sec;
-
   if (streamLive) {
     document.getElementById('btn-stream').textContent = '⏹ Terminar Stream';
     document.getElementById('btn-stream').classList.add('live');
     document.getElementById('playback-wrap').style.display = 'flex';
+    document.getElementById('hours-wrap').style.display = 'none';
   }
-
   updateMuteBtn();
-
   document.getElementById('custom-mins').addEventListener('keydown', e => {
     if (e.key === 'Enter') sendCustom(1);
   });
+  // Auto-conectar si hay credenciales guardadas
+  if (url && sec) connectWS();
 });
 </script>
 </body>
