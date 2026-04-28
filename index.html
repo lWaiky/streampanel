@@ -137,6 +137,24 @@
   .log-added.neg { color: #ff6b6b; font-weight: 600; }
   .log-time { color: rgba(255,255,255,0.2); margin-left: 6px; }
 
+  .donation-row { display: flex; gap: 6px; }
+  .donation-name {
+    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 8px 10px; color: #f0f0f0; font-size: 13px; outline: none;
+  }
+  .donation-name:focus { border-color: rgba(244,114,182,0.4); }
+  .donation-amount {
+    width: 70px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 8px 10px; color: #f0f0f0; font-size: 14px;
+    font-weight: 700; text-align: center; outline: none; font-family: monospace;
+  }
+  .btn-donation {
+    padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 700;
+    cursor: pointer; border: 1px solid rgba(244,114,182,0.3);
+    background: rgba(244,114,182,0.1); color: #f472b6; white-space: nowrap;
+    transition: transform 0.1s;
+  }
+  .btn-donation:active { transform: scale(0.96); }
   .toast {
     position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%) translateY(60px);
     background: #1e2030; border: 1px solid rgba(255,255,255,0.1);
@@ -200,6 +218,15 @@
     </div>
 
     <div class="card">
+      <div class="card-label">💜 donación externa</div>
+      <div class="donation-row">
+        <input class="donation-name" type="text" id="donation-name" placeholder="Nombre del donante" />
+        <input class="donation-amount" type="number" id="donation-amount" placeholder="€" min="0.5" step="0.5" />
+        <button class="btn-donation" onclick="sendManualDonation()">Añadir</button>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="card-label">historial de sesión</div>
       <div class="log-list" id="log-list"><div class="top5-empty">Sin eventos</div></div>
     </div>
@@ -225,7 +252,6 @@
 const medals = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣'];
 let ws = null, secret = '', logs = [];
 let paused = false;
-const seenLogIds = new Set();
 let muted = localStorage.getItem('muted') === 'true';
 let streamLive = localStorage.getItem('streamLive') === 'true';
 let connected = false;
@@ -252,13 +278,7 @@ function connectWS() {
       const msg = JSON.parse(e.data);
       if (msg.remaining !== undefined) syncTimer(msg.remaining, msg.paused);
       if (msg.top5 !== undefined) updateTop5(msg.top5);
-      if (msg.eventLog) {
-        const id = msg.eventLog.id;
-        if (!id || !seenLogIds.has(id)) {
-          if (id) { seenLogIds.add(id); if (seenLogIds.size > 200) seenLogIds.clear(); }
-          addLog(msg.eventLog.name, msg.eventLog.mins, msg.eventLog.label);
-        }
-      }
+      if (msg.eventLog) addLog(msg.eventLog.name, msg.eventLog.mins, msg.eventLog.label);
     } catch {}
   });
   ws.addEventListener('close', () => {
@@ -348,6 +368,18 @@ function sendCustom(sign) {
   document.getElementById('custom-mins').value = '';
 }
 
+
+function sendManualDonation() {
+  const name = document.getElementById('donation-name').value.trim();
+  const amount = parseFloat(document.getElementById('donation-amount').value) || 0;
+  if (!name) { showToast('Introduce el nombre'); return; }
+  if (amount <= 0) { showToast('Introduce la cantidad'); return; }
+  if (!send({ type: 'manual_donation', amount, username: name })) return;
+  addLog('💜 ' + name + ' donó ' + amount + '€', amount * 20 * 60, '+' + (amount * 20) + ' min');
+  showToast('💜 ' + name + ' — ' + amount + '€ añadido');
+  document.getElementById('donation-name').value = '';
+  document.getElementById('donation-amount').value = '';
+}
 function updateTop5(data) {
   const list = document.getElementById('top5-list');
   if (!data || !data.length) { list.innerHTML = '<div class="top5-empty">Sin datos</div>'; return; }
