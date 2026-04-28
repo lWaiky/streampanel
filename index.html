@@ -71,6 +71,26 @@
   .btn-add-contrib { padding: 7px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; border: 1px solid rgba(74,222,170,0.25); background: rgba(74,222,170,0.08); color: #4adeaa; }
   .btn-reset-top { width: 100%; padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,85,85,0.25); background: rgba(255,85,85,0.07); color: rgba(255,85,85,0.6); transition: transform 0.1s; }
   .btn-reset-top:hover { background: rgba(255,85,85,0.12); color: #ff6b6b; }
+  .mult-row { display: flex; gap: 6px; align-items: center; }
+  .mult-select {
+    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 8px 10px; color: #f0f0f0; font-size: 14px;
+    font-weight: 700; outline: none; cursor: pointer;
+  }
+  .mult-mins {
+    width: 65px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 8px 10px; color: #f0f0f0; font-size: 14px;
+    font-weight: 700; text-align: center; outline: none; font-family: monospace;
+  }
+  .btn-mult {
+    padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 700;
+    cursor: pointer; border: 1px solid rgba(249,168,37,0.3);
+    background: rgba(249,168,37,0.1); color: #f9a825;
+  }
+  .mult-status {
+    font-size: 12px; color: #f9a825; text-align: center;
+    display: none; font-weight: 700;
+  }
   .toast { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%) translateY(60px); background: #1e2030; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 6px 16px; font-size: 12px; color: #f0f0f0; transition: transform 0.3s; pointer-events: none; white-space: nowrap; z-index: 999; }
   .toast.show { transform: translateX(-50%) translateY(0); }
 </style>
@@ -122,6 +142,22 @@
         <button class="btn-custom btn-csub" onclick="sendCustom(-1)">−</button>
       </div>
     </div>
+    <div class="card">
+      <div class="card-label">⚡ multiplicador</div>
+      <div class="mult-row">
+        <select class="mult-select" id="mult-value">
+          <option value="1.5">x1.5</option>
+          <option value="2" selected>x2</option>
+          <option value="3">x3</option>
+          <option value="5">x5</option>
+        </select>
+        <input class="mult-mins" type="number" id="mult-mins" value="10" min="1" max="60" placeholder="min" />
+        <button class="btn-mult" onclick="setMultiplier()">Activar</button>
+        <button class="btn-mult" style="background:rgba(255,85,85,0.1);border-color:rgba(255,85,85,0.3);color:#ff6b6b;" onclick="cancelMultiplier()">✕</button>
+      </div>
+      <div class="mult-status" id="mult-status"></div>
+    </div>
+
     <div class="card">
       <div class="card-label">💜 donación externa</div>
       <div class="donation-row">
@@ -300,6 +336,43 @@ function confirmResetTop() {
   showToast('Top reseteado');
 }
 
+
+let multTimer = null;
+let multSecsLeft = 0;
+
+function setMultiplier() {
+  const mult = parseFloat(document.getElementById('mult-value').value) || 2;
+  const mins = parseInt(document.getElementById('mult-mins').value) || 10;
+  if (!send({ type: 'set_multiplier', multiplier: mult, mins })) return;
+  showToast('⚡ x' + mult + ' activado durante ' + mins + ' min');
+  startMultStatus(mult, mins * 60);
+}
+
+function cancelMultiplier() {
+  if (!send({ type: 'set_multiplier', multiplier: 1, mins: 0 })) return;
+  stopMultStatus();
+  showToast('Multiplicador desactivado');
+}
+
+function startMultStatus(mult, secs) {
+  multSecsLeft = secs;
+  const el = document.getElementById('mult-status');
+  el.style.display = 'block';
+  if (multTimer) clearInterval(multTimer);
+  multTimer = setInterval(() => {
+    multSecsLeft--;
+    const m = Math.floor(multSecsLeft / 60), s = multSecsLeft % 60;
+    el.textContent = '⚡ x' + mult + ' activo — ' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    if (multSecsLeft <= 0) stopMultStatus();
+  }, 1000);
+}
+
+function stopMultStatus() {
+  if (multTimer) { clearInterval(multTimer); multTimer = null; }
+  const el = document.getElementById('mult-status');
+  el.style.display = 'none';
+  el.textContent = '';
+}
 function updateTop5(data) {
   const list = document.getElementById('top5-list');
   if (!data || !data.length) { list.innerHTML = '<div class="top5-empty">Sin datos</div>'; return; }
