@@ -126,7 +126,7 @@
       <div class="card-label">💜 donación externa</div>
       <div class="donation-row">
         <input class="donation-name" type="text" id="donation-name" placeholder="Nombre del donante" />
-        <input class="donation-amount" type="number" id="donation-amount" placeholder="€" min="0.5" step="0.5" />
+        <input class="donation-amount" type="number" id="donation-amount" placeholder="€" min="1" step="0.5" />
         <button class="btn-donation" onclick="sendManualDonation()">Añadir</button>
       </div>
     </div>
@@ -260,7 +260,6 @@ function updateMuteBtn() {
 
 function sendTime(mins) {
   if (!send({ type: 'custom', amount: mins })) return;
-  addLog('Manual', mins * 60, (mins > 0 ? '+' : '') + mins + ' min');
   showToast((mins > 0 ? '+' : '') + mins + ' min');
 }
 
@@ -269,7 +268,6 @@ function sendCustom(sign) {
   if (val <= 0) { showToast('Introduce los minutos'); return; }
   const mins = sign * val;
   if (!send({ type: 'custom', amount: mins })) return;
-  addLog('Personalizado', mins * 60, (mins > 0 ? '+' : '') + mins + ' min');
   showToast((mins > 0 ? '+' : '') + mins + ' min');
   document.getElementById('custom-mins').value = '';
 }
@@ -278,9 +276,8 @@ function sendManualDonation() {
   const name = document.getElementById('donation-name').value.trim();
   const amount = parseFloat(document.getElementById('donation-amount').value) || 0;
   if (!name) { showToast('Introduce el nombre'); return; }
-  if (amount <= 0) { showToast('Introduce la cantidad'); return; }
+  if (amount < 1) { showToast('Mínimo 1€'); return; }
   if (!send({ type: 'manual_donation', amount, username: name })) return;
-  addLog('💜 ' + name + ' donó ' + amount + '€', amount * 20 * 60, '+' + (amount * 20) + ' min');
   showToast('💜 ' + name + ' — ' + amount + '€ añadido');
   document.getElementById('donation-name').value = '';
   document.getElementById('donation-amount').value = '';
