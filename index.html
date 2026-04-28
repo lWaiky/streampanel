@@ -6,129 +6,52 @@
 <title>Panel Stream</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: #0d0f14;
-    color: #f0f0f0;
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    min-height: 100vh;
-    padding: 1rem;
-  }
-
-  header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 1rem;
-  }
+  body { background: #0d0f14; color: #f0f0f0; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; padding: 1rem; }
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
   h1 { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.4); letter-spacing: 0.1em; text-transform: uppercase; }
   .conn-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; color: rgba(255,255,255,0.3); }
   .dot { width: 6px; height: 6px; border-radius: 50%; background: #444; }
   .dot.on { background: #4adeaa; box-shadow: 0 0 5px #4adeaa; }
   .dot.err { background: #ff5555; }
-
-  /* Setup oculto hasta conectar */
-  .setup {
-    background: #161820; border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 10px; padding: 10px;
-    display: flex; flex-direction: column; gap: 6px;
-    margin-bottom: 1rem;
-    transition: all 0.3s;
-  }
+  .setup { background: #161820; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 1rem; }
   .setup.hidden { display: none; }
   .setup-row { display: flex; gap: 6px; }
-  .setup input {
-    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 7px; padding: 7px 10px; color: #f0f0f0; font-size: 13px; outline: none;
-  }
+  .setup input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 7px; padding: 7px 10px; color: #f0f0f0; font-size: 13px; outline: none; }
   .setup input:focus { border-color: rgba(74,222,170,0.4); }
-  .btn-connect {
-    padding: 7px 14px; background: rgba(74,222,170,0.1); border: 1px solid rgba(74,222,170,0.3);
-    border-radius: 7px; color: #4adeaa; font-size: 13px; font-weight: 600; cursor: pointer;
-  }
-
-  /* Layout 2 columnas */
-  .layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    align-items: start;
-  }
-
+  .btn-connect { padding: 7px 14px; background: rgba(74,222,170,0.1); border: 1px solid rgba(74,222,170,0.3); border-radius: 7px; color: #4adeaa; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
   .col { display: flex; flex-direction: column; gap: 8px; }
-
-  .card {
-    background: #161820; border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 10px; padding: 10px;
-    display: flex; flex-direction: column; gap: 8px;
-  }
+  .card { background: #161820; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
   .card-label { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.08em; }
-
-  /* Timer */
-  .timer-display {
-    background: #161820; border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 12px; padding: 12px; text-align: center;
-  }
+  .timer-display { background: #161820; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 12px; text-align: center; }
   .timer-label { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; }
   .timer-value { font-size: 48px; font-weight: 700; letter-spacing: -2px; font-family: monospace; color: #fff; font-variant-numeric: tabular-nums; }
   .timer-value.low { color: #ff5555; }
-
-  /* Stream btn */
-  .btn-stream {
-    width: 100%; padding: 12px;
-    border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer;
-    border: 1px solid rgba(74,222,170,0.4); background: rgba(74,222,170,0.1); color: #4adeaa;
-    transition: transform 0.1s;
-  }
+  .btn-stream { width: 100%; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; border: 1px solid rgba(74,222,170,0.4); background: rgba(74,222,170,0.1); color: #4adeaa; transition: transform 0.1s; }
   .btn-stream:active { transform: scale(0.97); }
   .btn-stream.live { background: rgba(255,85,85,0.15); border-color: rgba(255,85,85,0.5); color: #ff6b6b; }
-
-  /* Controls */
   .controls-row { display: flex; gap: 8px; }
-  .btn-ctrl {
-    flex: 1; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600;
-    cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.6);
-    transition: transform 0.1s;
-  }
+  .btn-ctrl { flex: 1; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.6); transition: transform 0.1s; }
   .btn-ctrl:active { transform: scale(0.97); }
   .btn-ctrl.pause { color: #f9a825; border-color: rgba(249,168,37,0.3); background: rgba(249,168,37,0.08); }
   .btn-ctrl.muted { color: #ff6b6b; border-color: rgba(255,85,85,0.3); background: rgba(255,85,85,0.08); }
-
-  /* Tiempo */
   .time-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
-  .btn-time {
-    padding: 12px 4px; border-radius: 10px; font-size: 14px; font-weight: 700;
-    cursor: pointer; border: none; transition: transform 0.1s;
-  }
+  .btn-time { padding: 12px 4px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; transition: transform 0.1s; }
   .btn-time:active { transform: scale(0.95); }
   .btn-add { background: rgba(74,222,170,0.12); color: #4adeaa; border: 1px solid rgba(74,222,170,0.25); }
   .btn-sub { background: rgba(255,85,85,0.1); color: #ff6b6b; border: 1px solid rgba(255,85,85,0.2); }
-
   .custom-row { display: flex; gap: 6px; }
-  .custom-input {
-    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px; padding: 8px 10px; color: #f0f0f0; font-size: 16px;
-    font-weight: 700; text-align: center; outline: none; font-family: monospace;
-  }
-  .btn-custom {
-    padding: 8px 14px; border-radius: 8px; font-size: 15px; font-weight: 700;
-    cursor: pointer; transition: transform 0.1s;
-  }
+  .custom-input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 10px; color: #f0f0f0; font-size: 16px; font-weight: 700; text-align: center; outline: none; font-family: monospace; }
+  .btn-custom { padding: 8px 14px; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: transform 0.1s; }
   .btn-custom:active { transform: scale(0.96); }
   .btn-cadd { background: rgba(74,222,170,0.12); color: #4adeaa; border: 1px solid rgba(74,222,170,0.25); }
   .btn-csub { background: rgba(255,85,85,0.1); color: #ff6b6b; border: 1px solid rgba(255,85,85,0.2); }
-
-  /* Top5 */
   .top5-list { display: flex; flex-direction: column; gap: 4px; }
-  .top5-item {
-    display: flex; align-items: center; gap: 8px;
-    padding: 5px 8px; border-radius: 7px;
-    background: rgba(255,255,255,0.03); font-size: 12px;
-  }
+  .top5-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 7px; background: rgba(255,255,255,0.03); font-size: 12px; }
   .top5-rank { font-size: 14px; width: 20px; text-align: center; }
   .top5-name { flex: 1; color: #f0f0f0; font-weight: 500; }
   .top5-mins { color: #4adeaa; font-weight: 700; font-size: 13px; }
   .top5-empty { font-size: 12px; color: rgba(255,255,255,0.2); text-align: center; padding: 8px 0; }
-
-  /* Log */
   .log-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
   .log-item { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
   .log-item:last-child { border-bottom: none; }
@@ -136,41 +59,27 @@
   .log-added.pos { color: #4adeaa; font-weight: 600; }
   .log-added.neg { color: #ff6b6b; font-weight: 600; }
   .log-time { color: rgba(255,255,255,0.2); margin-left: 6px; }
-
   .donation-row { display: flex; gap: 6px; }
-  .donation-name {
-    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px; padding: 8px 10px; color: #f0f0f0; font-size: 13px; outline: none;
-  }
+  .donation-name { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 10px; color: #f0f0f0; font-size: 13px; outline: none; }
   .donation-name:focus { border-color: rgba(244,114,182,0.4); }
-  .donation-amount {
-    width: 70px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px; padding: 8px 10px; color: #f0f0f0; font-size: 14px;
-    font-weight: 700; text-align: center; outline: none; font-family: monospace;
-  }
-  .btn-donation {
-    padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 700;
-    cursor: pointer; border: 1px solid rgba(244,114,182,0.3);
-    background: rgba(244,114,182,0.1); color: #f472b6; white-space: nowrap;
-    transition: transform 0.1s;
-  }
+  .donation-amount { width: 70px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 10px; color: #f0f0f0; font-size: 14px; font-weight: 700; text-align: center; outline: none; font-family: monospace; }
+  .btn-donation { padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid rgba(244,114,182,0.3); background: rgba(244,114,182,0.1); color: #f472b6; white-space: nowrap; transition: transform 0.1s; }
   .btn-donation:active { transform: scale(0.96); }
-  .toast {
-    position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%) translateY(60px);
-    background: #1e2030; border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 16px; padding: 6px 16px; font-size: 12px; color: #f0f0f0;
-    transition: transform 0.3s; pointer-events: none; white-space: nowrap; z-index: 999;
-  }
+  .add-contrib-row { display: flex; gap: 6px; }
+  .contrib-name { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 7px 10px; color: #f0f0f0; font-size: 13px; outline: none; }
+  .contrib-mins { width: 65px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 7px 8px; color: #f0f0f0; font-size: 13px; text-align: center; outline: none; font-family: monospace; }
+  .btn-add-contrib { padding: 7px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; border: 1px solid rgba(74,222,170,0.25); background: rgba(74,222,170,0.08); color: #4adeaa; }
+  .btn-reset-top { width: 100%; padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,85,85,0.25); background: rgba(255,85,85,0.07); color: rgba(255,85,85,0.6); transition: transform 0.1s; }
+  .btn-reset-top:hover { background: rgba(255,85,85,0.12); color: #ff6b6b; }
+  .toast { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%) translateY(60px); background: #1e2030; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 6px 16px; font-size: 12px; color: #f0f0f0; transition: transform 0.3s; pointer-events: none; white-space: nowrap; z-index: 999; }
   .toast.show { transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
-
 <header>
   <h1>Panel Stream</h1>
   <div class="conn-badge"><div class="dot" id="dot"></div><span id="conn-label">sin conectar</span></div>
 </header>
-
 <div class="setup" id="setup-card">
   <div class="setup-row">
     <input type="text" id="ws-url" placeholder="wss://servidor.railway.app" />
@@ -180,9 +89,7 @@
     <button class="btn-connect" onclick="connectWS()">Conectar</button>
   </div>
 </div>
-
 <div class="layout">
-  <!-- Columna izquierda -->
   <div class="col">
     <div class="card">
       <div class="card-label">stream</div>
@@ -199,7 +106,6 @@
         <button class="btn-ctrl" id="btn-mute" onclick="toggleMute()">🔊 Sonido</button>
       </div>
     </div>
-
     <div class="card">
       <div class="card-label">tiempo rápido</div>
       <div class="time-grid">
@@ -216,7 +122,6 @@
         <button class="btn-custom btn-csub" onclick="sendCustom(-1)">−</button>
       </div>
     </div>
-
     <div class="card">
       <div class="card-label">💜 donación externa</div>
       <div class="donation-row">
@@ -225,36 +130,35 @@
         <button class="btn-donation" onclick="sendManualDonation()">Añadir</button>
       </div>
     </div>
-
     <div class="card">
       <div class="card-label">historial de sesión</div>
       <div class="log-list" id="log-list"><div class="top5-empty">Sin eventos</div></div>
     </div>
   </div>
-
-  <!-- Columna derecha -->
   <div class="col">
     <div class="timer-display">
       <div class="timer-label">tiempo en stream</div>
       <div class="timer-value" id="timer-val">--:--:--</div>
     </div>
-
     <div class="card">
       <div class="card-label">🏆 top 5 contribuidores</div>
       <div class="top5-list" id="top5-list"><div class="top5-empty">Sin datos</div></div>
+      <div class="add-contrib-row">
+        <input class="contrib-name" type="text" id="contrib-name" placeholder="Nombre" />
+        <input class="contrib-mins" type="number" id="contrib-mins" placeholder="min" min="1" step="1" />
+        <button class="btn-add-contrib" onclick="addContributor()">+ Añadir</button>
+      </div>
+      <button class="btn-reset-top" onclick="confirmResetTop()">↺ Resetear top</button>
     </div>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
-
 <script>
 const medals = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣'];
 let ws = null, secret = '', logs = [];
 let paused = false;
 let muted = localStorage.getItem('muted') === 'true';
 let streamLive = localStorage.getItem('streamLive') === 'true';
-let connected = false;
 
 function connectWS() {
   const url = document.getElementById('ws-url').value.trim();
@@ -267,23 +171,26 @@ function connectWS() {
   ws = new WebSocket(url);
   ws.addEventListener('open', () => {
     setStatus('on');
-    connected = true;
     ws.send(JSON.stringify({ role: 'panel' }));
-    // Ocultar setup al conectar
     document.getElementById('setup-card').classList.add('hidden');
     showToast('Conectado ✓');
   });
   ws.addEventListener('message', (e) => {
     try {
       const msg = JSON.parse(e.data);
-      if (msg.remaining !== undefined) syncTimer(msg.remaining, msg.paused);
-      if (msg.top5 !== undefined) updateTop5(msg.top5);
-      if (msg.eventLog) addLog(msg.eventLog.name, msg.eventLog.mins, msg.eventLog.label);
+      // Nuevo formato: type:'time' con remaining, paused, top5
+      if (msg.type === 'time') {
+        syncTimer(msg.remaining, msg.paused);
+        if (msg.top5) updateTop5(msg.top5);
+        if (msg.eventLog) addLog(msg.eventLog.name, msg.eventLog.mins * 60, msg.eventLog.label);
+      }
+      // Compatibilidad con formato anterior
+      if (msg.remaining !== undefined && !msg.type) syncTimer(msg.remaining, msg.paused);
+      if (msg.top5 !== undefined && !msg.type) updateTop5(msg.top5);
     } catch {}
   });
   ws.addEventListener('close', () => {
     setStatus('off');
-    connected = false;
     document.getElementById('setup-card').classList.remove('hidden');
     showToast('Desconectado');
   });
@@ -313,7 +220,6 @@ function toggleStream() {
   if (!streamLive) {
     const hours = parseFloat(document.getElementById('init-hours').value) || 4;
     const mins = hours * 60;
-    send({ type: 'reset_contributors' });
     send({ type: 'set_time', amount: mins });
     send({ type: 'start_stream' });
     streamLive = true;
@@ -322,7 +228,7 @@ function toggleStream() {
     document.getElementById('btn-stream').classList.add('live');
     document.getElementById('playback-wrap').style.display = 'flex';
     document.getElementById('hours-wrap').style.display = 'none';
-    addLog('Stream iniciado', mins * 60, '▶ ' + hours + 'h');
+    addLog('Stream iniciado', 0, '▶ ' + hours + 'h');
     showToast('▶ Stream iniciado');
   } else {
     streamLive = false;
@@ -368,7 +274,6 @@ function sendCustom(sign) {
   document.getElementById('custom-mins').value = '';
 }
 
-
 function sendManualDonation() {
   const name = document.getElementById('donation-name').value.trim();
   const amount = parseFloat(document.getElementById('donation-amount').value) || 0;
@@ -380,6 +285,24 @@ function sendManualDonation() {
   document.getElementById('donation-name').value = '';
   document.getElementById('donation-amount').value = '';
 }
+
+function addContributor() {
+  const name = document.getElementById('contrib-name').value.trim();
+  const mins = parseInt(document.getElementById('contrib-mins').value) || 0;
+  if (!name) { showToast('Introduce el nombre'); return; }
+  if (mins <= 0) { showToast('Introduce los minutos'); return; }
+  if (!send({ type: 'add_contributor', username: name, mins })) return;
+  showToast('✓ ' + name + ' añadido con ' + mins + ' min');
+  document.getElementById('contrib-name').value = '';
+  document.getElementById('contrib-mins').value = '';
+}
+
+function confirmResetTop() {
+  if (!confirm('¿Seguro que quieres resetear el top?')) return;
+  if (!send({ type: 'reset_contributors' })) return;
+  showToast('Top reseteado');
+}
+
 function updateTop5(data) {
   const list = document.getElementById('top5-list');
   if (!data || !data.length) { list.innerHTML = '<div class="top5-empty">Sin datos</div>'; return; }
@@ -394,9 +317,7 @@ function addLog(name, secs, label) {
   logs.unshift({ name, secs, label, t });
   if (logs.length > 100) logs.pop();
   localStorage.setItem('sessionLogs', JSON.stringify(logs));
-  document.getElementById('log-list').innerHTML = logs.map(l =>
-    `<div class="log-item"><span class="log-name">${l.name}</span><span class="log-added ${l.secs>=0?'pos':'neg'}">${l.label}</span><span class="log-time">${l.t}</span></div>`
-  ).join('');
+  renderLogs();
 }
 
 function renderLogs() {
@@ -420,10 +341,8 @@ function showToast(msg) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  // Cargar historial guardado
   const savedLogs = localStorage.getItem('sessionLogs');
   if (savedLogs) { try { logs = JSON.parse(savedLogs); renderLogs(); } catch {} }
-
   const url = localStorage.getItem('ws_url');
   const sec = localStorage.getItem('ws_secret');
   if (url) document.getElementById('ws-url').value = url;
@@ -435,10 +354,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('hours-wrap').style.display = 'none';
   }
   updateMuteBtn();
-  document.getElementById('custom-mins').addEventListener('keydown', e => {
-    if (e.key === 'Enter') sendCustom(1);
-  });
-  // Auto-conectar si hay credenciales guardadas
+  document.getElementById('custom-mins').addEventListener('keydown', e => { if (e.key === 'Enter') sendCustom(1); });
   if (url && sec) connectWS();
 });
 </script>
