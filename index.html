@@ -342,7 +342,8 @@ function showToast(msg) {
 
 window.addEventListener('DOMContentLoaded', () => {
   const savedLogs = localStorage.getItem('sessionLogs');
-  if (savedLogs) { try { logs = JSON.parse(savedLogs); renderLogs(); } catch {} }
+  if (savedLogs) { try { logs = JSON.parse(savedLogs); } catch {} }
+  renderLogs();
   const url = localStorage.getItem('ws_url');
   const sec = localStorage.getItem('ws_secret');
   if (url) document.getElementById('ws-url').value = url;
